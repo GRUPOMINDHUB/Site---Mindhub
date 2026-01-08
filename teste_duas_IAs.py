@@ -2,6 +2,7 @@ import os
 import json
 import re
 import unicodedata
+import requests
 from dotenv import load_dotenv
 
 from google.oauth2.credentials import Credentials
@@ -22,10 +23,14 @@ SCOPES = [
 ]
 
 FOLDER_ID_RAIZ = "1QZ7yhuOBW0HPzzZmtlZs0XCBsxFId7pG"
-MODEL = "llama-3.3-70b-versatile"
+
+MODEL_GROQ = "llama-3.3-70b-versatile"
+MODEL_HF = "HuggingFaceH4/zephyr-7b-beta"
 
 MAX_FILES_ANALISADOS = 400
 MAX_ARQUIVOS_LIDOS = 8
+
+IA_ESCOLHIDA = None  # groq | hf
 
 # ================= AUTH GOOGLE =================
 
@@ -53,9 +58,10 @@ def conectar_google():
 
 drive, docs = conectar_google()
 
-# ================= GROQ =================
+# ================= IA CLIENTS =================
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+HF_API_KEY = os.getenv("HF_API_KEY")
 
 # ================= UTIL =================
 
@@ -103,7 +109,6 @@ def ler_arquivo(file_id, mime):
         if "text" in mime or mime.endswith("json"):
             txt = drive.files().get_media(fileId=file_id).execute()
             return txt.decode("utf-8")
-
     except:
         return None
 
@@ -118,12 +123,9 @@ def atualizar_arquivo_texto(file_id, novo_texto):
     ).execute()
 
 def atualizar_google_doc(doc_id, novo_texto):
-    # 1️⃣ pegar estrutura do documento
     doc = docs.documents().get(documentId=doc_id).execute()
-
     body = doc.get("body", {}).get("content", [])
 
-    # 2️⃣ descobrir o último índice válido
     end_index = 1
     for elem in body:
         if "endIndex" in elem:
@@ -131,18 +133,13 @@ def atualizar_google_doc(doc_id, novo_texto):
 
     requests = []
 
-    # 3️⃣ apagar conteúdo se existir
     if end_index > 1:
         requests.append({
             "deleteContentRange": {
-                "range": {
-                    "startIndex": 1,
-                    "endIndex": end_index - 1
-                }
+                "range": {"startIndex": 1, "endIndex": end_index - 1}
             }
         })
 
-    # 4️⃣ inserir novo texto
     requests.append({
         "insertText": {
             "location": {"index": 1},
@@ -157,12 +154,40 @@ def atualizar_google_doc(doc_id, novo_texto):
 
 # ================= IA =================
 
+def responder_ia(prompt):
+    if IA_ESCOLHIDA == "groq":
+        r = groq_client.chat.completions.create(
+            model=MODEL_GROQ,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2
+        )
+        return r.choices[0].message.content
+
+    if IA_ESCOLHIDA == "hf":
+        url = f"https://api-inference.huggingface.co/models/{MODEL_HF}"
+        headers = {
+            "Authorization": f"Bearer {HF_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 800,
+                "temperature": 0.2,
+                "return_full_text": False
+            }
+        }
+
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
+        r.raise_for_status()
+        data = r.json()
+        return data[0]["generated_text"]
+
+    return "IA nao configurada"
+
 def detectar_intencao(pergunta):
     p = normalizar(pergunta)
-    for v in [
-        "editar", "alterar", "corrigir", "mudar",
-        "reescrever", "adicionar", "remover", "apagar"
-    ]:
+    for v in ["editar", "alterar", "corrigir", "mudar", "reescrever", "adicionar", "remover", "apagar"]:
         if v in p:
             return "EDITAR"
     return "CONSULTAR"
@@ -179,8 +204,7 @@ def agente(pergunta):
 
     rank = []
     for i in itens:
-        s = similaridade(pergunta_n, normalizar(i["name"]))
-        rank.append((s, i))
+        rank.append((similaridade(pergunta_n, normalizar(i["name"])), i))
 
     rank.sort(reverse=True, key=lambda x: x[0])
     candidatos = rank[:MAX_ARQUIVOS_LIDOS]
@@ -196,9 +220,9 @@ def agente(pergunta):
         }
 
         if entrada["tipo"] == "ARQUIVO":
-            texto = ler_arquivo(item["id"], item["mimeType"])
-            if texto:
-                entrada["conteudo"] = texto
+            txt = ler_arquivo(item["id"], item["mimeType"])
+            if txt:
+                entrada["conteudo"] = txt
 
         contexto.append(entrada)
 
@@ -218,18 +242,9 @@ regras:
 - se nao existir, diga claramente
 - nao invente nada
 """
-
-        r = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2
-        )
-
         print("\n🧠 resposta:")
-        print(r.choices[0].message.content)
+        print(responder_ia(prompt))
         return
-
-    # ===== EDIÇÃO =====
 
     for item in contexto:
         if item["tipo"] == "ARQUIVO" and "conteudo" in item:
@@ -244,14 +259,7 @@ conteudo atual:
 
 retorne APENAS o novo conteudo completo.
 """
-
-            r = client.chat.completions.create(
-                model=MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0
-            )
-
-            novo = r.choices[0].message.content
+            novo = responder_ia(prompt)
 
             if "google-apps.document" in item["mime"]:
                 atualizar_google_doc(item["id"], novo)
@@ -266,7 +274,19 @@ retorne APENAS o novo conteudo completo.
 # ================= MAIN =================
 
 def main():
+    global IA_ESCOLHIDA
+
     print("=== AGENTE IA DRIVE ===")
+    print("escolha a IA:")
+    print("1 - Groq")
+    print("2 - Hugging Face")
+
+    op = input("> ").strip()
+
+    IA_ESCOLHIDA = "groq" if op == "1" else "hf"
+
+    print(f"\n✅ usando IA: {IA_ESCOLHIDA.upper()}")
+
     while True:
         q = input("\n👤 pergunta (ou sair): ")
         if q.lower() in ["sair", "exit"]:
