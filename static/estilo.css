@@ -114,6 +114,7 @@ body {
     max-width: 800px;
     margin: 50px auto;
     background: white;
+    padding:20px;
     border-radius: 15px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     display: flex;
@@ -132,9 +133,13 @@ body {
 
 /* Bolhas de Mensagem */
 .msg {
-    padding: 10px 15px;
-    border-radius: 15px;
-    max-width: 70%;
+    margin-bottom: 15px;
+    padding: 15px 20px; /* Aumenta o respiro interno da bolha */
+    border-radius: 18px;
+    line-height: 1.6;    /* Aumenta o espaço entre as linhas das letras */
+    letter-spacing: 0.3px; /* Dá um leve respiro entre cada letra */
+    word-wrap: break-word;
+    font-family: 'Poppins', sans-serif; /* Garante uma fonte mais legível */
 }
 
 .user-msg {
@@ -144,9 +149,19 @@ body {
 }
 
 .ia-msg {
-    align-self: flex-start;
-    background-color: #f1f0f0;
-    color: #333;
+    white-space: pre-wrap;
+    background-color: #f8f9fa; /* Um cinza mais suave */
+    color: #212529;
+    line-height: 1.7; /* Aumenta um pouco mais o respiro entre linhas */
+    padding: 18px 25px;
+    border-radius: 15px 15px 15px 2px; /* Estilo bolha moderna */
+    border: 1px solid #e9ecef;
+}
+
+/* Garante que negritos e listas fiquem destacados dentro da bolha */
+.ia-msg b, .ia-msg strong {
+    color: #000;
+    font-weight: 600;
 }
 
 /* Área de Input */
@@ -163,4 +178,28 @@ body {
     border: 1px solid #ddd;
     border-radius: 25px;
     outline: none;
+}
+
+.btn-reset-base {
+    background-color: transparent;
+    color: #6c757d;
+    border: 1px solid #ced4da;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-reset-base:hover {
+    background-color: #f8f9fa;
+    color: #343a40;
+    border-color: #adb5bd;
+}
+
+/* Estilo para quando o botão estiver desativado (carregando) */
+.btn-reset-base:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

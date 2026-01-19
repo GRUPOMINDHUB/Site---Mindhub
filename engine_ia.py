@@ -9,9 +9,12 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
+
+# AJUSTE PARA LANGCHAIN v1.0.5 (Usando o pacote classic)
+from langchain_classic.chains import ConversationalRetrievalChain
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_core.prompts import PromptTemplate
+
 
 load_dotenv()
 
@@ -26,7 +29,8 @@ class EngineIA:
 
         self.creds = service_account.Credentials.from_service_account_file(ARQUIVO_CREDENCIAIS)
         self.service = build("drive", "v3", credentials=self.creds)
-        self.embeddings = OpenAIEmbeddings()
+        # No seu __init__
+        self.embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 
     def carregar_arquivos_recursivo(self, folder_id, path_nome="empresa"):
         documentos_finais = []
@@ -111,14 +115,27 @@ class EngineIA:
         chunks = text_splitter.split_documents(documentos)
         vector_db = FAISS.from_documents(chunks, self.embeddings)
 
-        template = """Você é um sistema de auditoria forense corporativa.
-        Responda com 100% de fidelidade ao contexto.
-        CONTEXTO: {context}
-        PERGUNTA: {question}
-        RESPOSTA TÉCNICA:"""
+        template = """
+        Você é um Mediador estratégico do Grupo Mindhub, especializado em auditoria e gestão de dados corporativos.
+
+        DIRETRIZES DE RESPOSTA:
+        1. INTERPRETAÇÃO FLEXÍVEL: Entenda que termos como 'alunos', 'inscritos', 'clientes' ou 'pessoas' referem-se às entidades e empresas listadas nas fichas do Google Drive.
+        2. FIDELIDADE AOS DADOS: Para perguntas diretas, responda estritamente com base nas informações encontradas no CONTEXTO.
+        3. DISTINÇÃO DE CONSELHOS: Se você identificar uma oportunidade de melhoria ou algo não solicitado que agregue valor, você deve obrigatoriamente iniciar esse parágrafo com o rótulo "CONSELHO ESTRATÉGICO:".
+        4. SEPARAÇÃO DE FATOS: Mantenha os dados técnicos separados das sugestões.
+        5. FORMATAÇÃO: Use quebras de linha, listas (bullet points) e negrito para organizar as informações e facilitar a leitura, evite ficar usando "**", e permita-se usar emojis.
+        6. O CONSELHO ESTRATEGICO TEM QUE CONSOLIDAR COM A PERGUNTA DO USUARIO, PROIBIDO CONSELHOS SEM ESTAR LINKADO A PERGUNTA DO USUARIO
+        CONTEXTO:
+        {context}
+
+        PERGUNTA DO USUÁRIO:
+        {question}
+
+        RESPOSTA:
+        """
 
         return ConversationalRetrievalChain.from_llm(
-            llm=ChatOpenAI(model="gpt-4o", temperature=0),
+            llm=ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPENAI_API_KEY")),
             retriever=vector_db.as_retriever(search_kwargs={"k": 40}),
             memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True, output_key="answer"),
             combine_docs_chain_kwargs={"prompt": PromptTemplate(template=template, input_variables=["context", "question"])}
