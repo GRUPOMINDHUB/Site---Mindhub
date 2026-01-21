@@ -151,35 +151,49 @@
         }
 
         function criarBotaoConfirmacao(id, nome, texto) {
-            const chatContainer = document.getElementById('chat-box'); // Use o ID do seu container de mensagens
+            const chatContainer = document.getElementById('chat-box'); 
             const btn = document.createElement('button');
             
             btn.innerHTML = `💾 Confirmar Alteração: <b>${nome}</b>`;
             btn.className = "btn-confirmar-edicao";
             
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 btn.disabled = true;
                 btn.innerText = "⏳ Gravando no Drive...";
 
-                fetch('/executar-edicao', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        file_id: id,
-                        nome_arquivo: nome,
-                        texto: texto
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    alert(data.mensagem);
-                    btn.remove(); // Remove o botão após o sucesso
-                })
-                .catch(() => {
-                    alert("Erro ao gravar alteração.");
+                try {
+                    const resposta = await fetch('/executar-edicao', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            file_id: id,
+                            nome_arquivo: nome,
+                            texto: texto
+                        })
+                    });
+
+                    // Tenta ler o corpo da resposta como JSON
+                    const dados = await resposta.json();
+
+                    if (resposta.ok) {
+                        alert(dados.mensagem || "Sucesso!");
+                        btn.remove(); 
+                    } else {
+                        // Prioriza exibir o erro detalhado (causa) enviado pelo servidor.py
+                        console.error("Erro técnico retornado pelo servidor:", dados);
+                        
+                        const mensagemErro = dados.causa || dados.mensagem || dados.erro || "Erro interno no servidor";
+                        alert("Falha na gravação:\n\n" + mensagemErro);
+                        
+                        btn.disabled = false;
+                        btn.innerText = "Tentar Novamente";
+                    }
+                } catch (erro) {
+                    console.error("Erro na comunicação com a API:", erro);
+                    alert("Erro de conexão: Não foi possível alcançar o servidor.");
                     btn.disabled = false;
                     btn.innerText = "Tentar Novamente";
-                });
+                }
             };
 
             chatContainer.appendChild(btn);

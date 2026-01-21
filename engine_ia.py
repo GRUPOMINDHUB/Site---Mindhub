@@ -6,7 +6,11 @@ from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
-
+import os
+from io import BytesIO
+from docx import Document
+import pandas as pd
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredExcelLoader, Docx2txtLoader
@@ -133,15 +137,16 @@ class EngineIA:
         4. SEPARAÇÃO DE FATOS: Mantenha os dados técnicos separados das sugestões.
         5. FORMATAÇÃO: Use quebras de linha, listas (bullet points) e negrito para organizar as informações e facilitar a leitura, evite ficar usando **, e permita-se usar emojis.
         6. O CONSELHO ESTRATEGICO TEM QUE CONSOLIDAR COM A PERGUNTA DO USUARIO, PROIBIDO CONSELHOS SEM ESTAR LINKADO A PERGUNTA DO USUARIO
-        7. CAPACIDADE DE EDIÇÃO: Você possui ferramentas técnicas.
-        - O ID do arquivo está escrito no início de cada trecho do CONTEXTO como 'ARQUIVO_ID'.
-        - Sempre extraia esse ID para preencher o campo abaixo.
-        - Formate EXATAMENTE assim:
+        7. CAPACIDADE DE EDIÇÃO: Você deve decidir como o arquivo será alterado com base no pedido do usuário.
+        - Se o usuário pedir para APAGAR TUDO ou LIMPAR: Use o comando [AÇÃO: LIMPAR]
+        - Se o usuário pedir para MUDAR algo específico (ex: trocar email): Use o comando [AÇÃO: SUBSTITUIR | DE: texto_antigo | PARA: texto_novo]
+        - Se o usuário apenas quiser ADICIONAR algo: Use o comando [AÇÃO: ADICIONAR]
+
+        Formate EXATAMENTE assim na sua sugestão:
             [SUGESTÃO DE EDIÇÃO]
             Arquivo: {{nome_do_arquivo}}
             ID: {{id_do_arquivo}}
-            Alteração: {{descreva_a_mudanca}}
-        - Se o usuário responder "pode salvar", "sim", "confirmo" ou algo positivo logo após uma [SUGESTÃO DE EDIÇÃO], você deve repetir os dados técnicos (Arquivo e ID) e dizer: "ENTENDIDO. DISPARANDO_EXECUCAO_ID:{{id_do_arquivo}}".
+            Alteração: [AÇÃO: ... | DETALHES: ...]".
 
         CONTEXTO:
         {context}
@@ -162,37 +167,87 @@ class EngineIA:
     def editar_e_salvar_no_drive(self, file_id, nome_arquivo, novas_infos):
         try:
             ext = os.path.splitext(nome_arquivo)[1].lower()
-            temp_path = f"temp_edit_{file_id}{ext}"
+            temp_path = os.path.join("/tmp", f"temp_edit_{file_id}{ext}")
             
             # 1. BAIXA O ARQUIVO
-            request = self.service.files().get_media(fileId=file_id)
-            fh = io.FileIO(temp_path, 'wb')
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while not done: _, done = downloader.next_chunk()
-            fh.close()
+            # Tentativa de download direto
+            try:
+                request = self.service.files().get_media(fileId=file_id)
+                fh = BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+            except Exception:
+                # Se falhar, tenta exportar (caso seja um Google Doc nativo)
+                mime_export = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' if ext == '.docx' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                request = self.service.files().export_media(fileId=file_id, mimeType=mime_export)
+                fh = BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+
+            # Salva o conteúdo baixado no arquivo temporário para as bibliotecas lerem
+            with open(temp_path, 'wb') as f:
+                f.write(fh.getbuffer())
 
             # 2. EDITA POR TIPO
             mime_type = ""
             if ext in ['.xlsx', '.xls']:
                 mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 df = pd.read_excel(temp_path)
-                # Adiciona uma nova linha com a auditoria
-                novo_dado = pd.DataFrame([{"Auditoria": "MindLink", "Info": novas_infos}])
-                df = pd.concat([df, novo_dado], ignore_index=True)
+                # Adiciona nova linha
+                nova_linha = pd.DataFrame([{"Auditoria": "MindLink", "Info": novas_infos}])
+                df = pd.concat([df, nova_linha], ignore_index=True)
                 df.to_excel(temp_path, index=False)
             elif ext == '.docx':
                 mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 doc = Document(temp_path)
-                doc.add_paragraph(f"\n--- ATUALIZAÇÃO MINDLINK ---\n{novas_infos}")
-                doc.save(temp_path)
+                
+                # 1. TOMADA DE DECISÃO: LIMPAR TUDO
+                if "[AÇÃO: LIMPAR]" in novas_infos.upper():
+                    # Esvazia todos os parágrafos existentes
+                    for p in doc.paragraphs:
+                        p.text = ""
+                    # Adiciona uma marca d'água de que foi limpo (opcional)
+                    doc.add_paragraph("Arquivo limpo via MindLink conforme solicitado.")
 
-            # 3. FAZ O UPLOAD (SOBRESCREVE)
-            media = MediaIoBaseUpload(temp_path, mimetype=mime_type, resumable=True)
-            self.service.files().update(fileId=file_id, media_body=media).execute()
+                # 2. TOMADA DE DECISÃO: SUBSTITUIR ESPECÍFICO
+                elif "AÇÃO: SUBSTITUIR" in novas_infos.upper():
+                    try:
+                        # Extrai os termos (Ex: [AÇÃO: SUBSTITUIR | DE: x@a.com | PARA: y@b.com])
+                        termo_antigo = novas_infos.split("| DE:")[1].split("| PARA:")[0].strip()
+                        termo_novo = novas_infos.split("| PARA:")[1].replace("]", "").strip()
+                        
+                        # Percorre o documento trocando o texto
+                        for p in doc.paragraphs:
+                            if termo_antigo in p.text:
+                                p.text = p.text.replace(termo_antigo, termo_novo)
+                    except Exception:
+                        # Se a IA errar o formato, ele apenas adiciona para não perder o dado
+                        doc.add_paragraph(f"\n[Falha na substituição, dado adicionado]: {novas_infos}")
+
+                # 3. TOMADA DE DECISÃO: APENAS ADICIONAR (Padrão)
+                else:
+                    doc.add_paragraph(f"\n--- ATUALIZAÇÃO MINDLINK ---\n{novas_infos}")
+
+                doc.save(temp_path)
+            # 3. FAZ O UPLOAD (O ERRO ESTAVA AQUI)
+            # É necessário abrir o arquivo em modo binário ('rb') para o upload
+            with open(temp_path, 'rb') as f:
+                media = MediaIoBaseUpload(f, mimetype=mime_type, resumable=True)
+                self.service.files().update(
+                    fileId=file_id,
+                    media_body=media
+                ).execute()
             
-            if os.path.exists(temp_path): os.remove(temp_path)
+            # Limpeza
+            if os.path.exists(temp_path): 
+                os.remove(temp_path)
             return True
+
         except Exception as e:
-            print(f"Erro na edição: {e}")
+            # IMPORTANTE: Isso enviará o erro real para o seu Log do Cloud Run
+            print(f"ERRO CRÍTICO NA GRAVAÇÃO: {str(e)}")
             return False

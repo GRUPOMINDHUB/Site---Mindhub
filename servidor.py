@@ -3,11 +3,13 @@ from flask_cors import CORS
 import sqlite3
 import os
 from engine_ia import EngineIA 
+import traceback
 
 app = Flask(__name__)
 CORS(app)
 # 1. Inicializa a IA (mantenha fora das rotas para carregar uma vez só)
-ia_engine = EngineIA().inicializar_sistema()
+ia_instancia = EngineIA()
+ia_engine = ia_instancia.inicializar_sistema()
 app.secret_key = 'Mindhub@1417!' # DEFINA UMA CHAVE AQUI
 
 
@@ -60,24 +62,38 @@ def executar_edicao():
     if 'usuario' not in session:
         return jsonify({"erro": "Não autorizado"}), 403
         
-    dados = request.json
-    # A IA deve passar o file_id e o texto que ela propôs
-    file_id = dados.get('file_id')
-    nome_arquivo = dados.get('nome_arquivo')
-    texto_edicao = dados.get('texto')
-    
-    sucesso = ia_engine.editar_e_salvar_no_drive(file_id, nome_arquivo, texto_edicao)
-    
-    if sucesso:
-        return jsonify({"status": "sucesso", "mensagem": "Arquivo atualizado no Drive!"})
-    return jsonify({"status": "erro", "mensagem": "Falha na gravação."}), 500
+    try:
+        dados = request.json
+        file_id = dados.get('file_id')
+        nome_arquivo = dados.get('nome_arquivo')
+        texto_edicao = dados.get('texto')
+        
+        # Tenta executar a gravação
+        sucesso = ia_instancia.editar_e_salvar_no_drive(file_id, nome_arquivo, texto_edicao)
+        
+        if sucesso:
+            return jsonify({"status": "sucesso", "mensagem": "Arquivo atualizado no Drive!"})
+        else:
+            # Se a função retornou False, o erro foi capturado no try/except da EngineIA
+            return jsonify({"status": "erro", "mensagem": "A função de gravação falhou. Verifique os logs do sistema."}), 500
+
+    except Exception as e:
+        # Captura o erro técnico exato
+        erro_detalhado = traceback.format_exc()
+        print(erro_detalhado) # Imprime no terminal/Cloud Run
+        return jsonify({
+            "status": "erro", 
+            "mensagem": str(e), 
+            "detalhe": erro_detalhado
+        }), 500
 
 @app.route('/forçar-atualizacao', methods=['POST'])
 def forcar_atualizacao():
-    global ia_engine, esta_atualizando
+    global ia_engine, ia_instancia, esta_atualizando 
     esta_atualizando = True
     try:
-        ia_engine = EngineIA().inicializar_sistema()
+        ia_instancia = EngineIA() 
+        ia_engine = ia_instancia.inicializar_sistema()
         return jsonify({"status": "sucesso"})
     finally:
         esta_atualizando = False
