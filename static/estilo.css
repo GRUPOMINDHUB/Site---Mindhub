@@ -203,3 +203,27 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.btn-confirmar-edicao {
+    background-color: #28a745; /* Verde sucesso */
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+    display: block;
+    width: fit-content;
+    transition: background 0.3s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn-confirmar-edicao:hover {
+    background-color: #218838;
+}
+
+.btn-confirmar-edicao:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}

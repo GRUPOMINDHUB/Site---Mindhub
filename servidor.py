@@ -55,6 +55,23 @@ esta_atualizando = False
 def status_atualizacao():
     return jsonify({"atualizando": esta_atualizando})
 
+@app.route('/executar-edicao', methods=['POST'])
+def executar_edicao():
+    if 'usuario' not in session:
+        return jsonify({"erro": "Não autorizado"}), 403
+        
+    dados = request.json
+    # A IA deve passar o file_id e o texto que ela propôs
+    file_id = dados.get('file_id')
+    nome_arquivo = dados.get('nome_arquivo')
+    texto_edicao = dados.get('texto')
+    
+    sucesso = ia_engine.editar_e_salvar_no_drive(file_id, nome_arquivo, texto_edicao)
+    
+    if sucesso:
+        return jsonify({"status": "sucesso", "mensagem": "Arquivo atualizado no Drive!"})
+    return jsonify({"status": "erro", "mensagem": "Falha na gravação."}), 500
+
 @app.route('/forçar-atualizacao', methods=['POST'])
 def forcar_atualizacao():
     global ia_engine, esta_atualizando

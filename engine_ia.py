@@ -1,5 +1,7 @@
 import os
 import io
+import pandas as pd
+from docx import Document
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -81,6 +83,7 @@ class EngineIA:
                         with open(temp_path, "wb") as out:
                             out.write(fh.getvalue())
 
+                        # Define o Loader correto
                         if ext == '.pdf':
                             loader = PyPDFLoader(temp_path)
                         elif ext == '.docx':
@@ -88,11 +91,16 @@ class EngineIA:
                         else:
                             loader = UnstructuredExcelLoader(temp_path, mode="elements")
 
+                        # CARREGA E INJETA O ID (Aqui é o lugar certo!)
                         docs = loader.load()
                         for d in docs:
+                            # Injeta os dados técnicos no texto para a IA ler
+                            d.page_content = f"ARQUIVO_ID: {f['id']}\nNOME_ARQUIVO: {nome_arquivo}\n{d.page_content}"
+                            
                             d.metadata.update({
                                 "setor": path_nome.split('/')[-1],
-                                "origem": nome_arquivo
+                                "origem": nome_arquivo,
+                                "file_id": f['id']
                             })
                         documentos_finais.extend(docs)
                         
@@ -123,8 +131,18 @@ class EngineIA:
         2. FIDELIDADE AOS DADOS: Para perguntas diretas, responda estritamente com base nas informações encontradas no CONTEXTO.
         3. DISTINÇÃO DE CONSELHOS: Se você identificar uma oportunidade de melhoria ou algo não solicitado que agregue valor, você deve obrigatoriamente iniciar esse parágrafo com o rótulo "CONSELHO ESTRATÉGICO:".
         4. SEPARAÇÃO DE FATOS: Mantenha os dados técnicos separados das sugestões.
-        5. FORMATAÇÃO: Use quebras de linha, listas (bullet points) e negrito para organizar as informações e facilitar a leitura, evite ficar usando "**", e permita-se usar emojis.
+        5. FORMATAÇÃO: Use quebras de linha, listas (bullet points) e negrito para organizar as informações e facilitar a leitura, evite ficar usando **, e permita-se usar emojis.
         6. O CONSELHO ESTRATEGICO TEM QUE CONSOLIDAR COM A PERGUNTA DO USUARIO, PROIBIDO CONSELHOS SEM ESTAR LINKADO A PERGUNTA DO USUARIO
+        7. CAPACIDADE DE EDIÇÃO: Você possui ferramentas técnicas.
+        - O ID do arquivo está escrito no início de cada trecho do CONTEXTO como 'ARQUIVO_ID'.
+        - Sempre extraia esse ID para preencher o campo abaixo.
+        - Formate EXATAMENTE assim:
+            [SUGESTÃO DE EDIÇÃO]
+            Arquivo: {{nome_do_arquivo}}
+            ID: {{id_do_arquivo}}
+            Alteração: {{descreva_a_mudanca}}
+        - Se o usuário responder "pode salvar", "sim", "confirmo" ou algo positivo logo após uma [SUGESTÃO DE EDIÇÃO], você deve repetir os dados técnicos (Arquivo e ID) e dizer: "ENTENDIDO. DISPARANDO_EXECUCAO_ID:{{id_do_arquivo}}".
+
         CONTEXTO:
         {context}
 
@@ -136,7 +154,45 @@ class EngineIA:
 
         return ConversationalRetrievalChain.from_llm(
             llm=ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPENAI_API_KEY")),
-            retriever=vector_db.as_retriever(search_kwargs={"k": 40}),
+            retriever=vector_db.as_retriever(search_kwargs={"k": 100}),
             memory=ConversationBufferMemory(memory_key="chat_history", return_messages=True, output_key="answer"),
             combine_docs_chain_kwargs={"prompt": PromptTemplate(template=template, input_variables=["context", "question"])}
         )
+    
+    def editar_e_salvar_no_drive(self, file_id, nome_arquivo, novas_infos):
+        try:
+            ext = os.path.splitext(nome_arquivo)[1].lower()
+            temp_path = f"temp_edit_{file_id}{ext}"
+            
+            # 1. BAIXA O ARQUIVO
+            request = self.service.files().get_media(fileId=file_id)
+            fh = io.FileIO(temp_path, 'wb')
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done: _, done = downloader.next_chunk()
+            fh.close()
+
+            # 2. EDITA POR TIPO
+            mime_type = ""
+            if ext in ['.xlsx', '.xls']:
+                mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                df = pd.read_excel(temp_path)
+                # Adiciona uma nova linha com a auditoria
+                novo_dado = pd.DataFrame([{"Auditoria": "MindLink", "Info": novas_infos}])
+                df = pd.concat([df, novo_dado], ignore_index=True)
+                df.to_excel(temp_path, index=False)
+            elif ext == '.docx':
+                mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                doc = Document(temp_path)
+                doc.add_paragraph(f"\n--- ATUALIZAÇÃO MINDLINK ---\n{novas_infos}")
+                doc.save(temp_path)
+
+            # 3. FAZ O UPLOAD (SOBRESCREVE)
+            media = MediaIoBaseUpload(temp_path, mimetype=mime_type, resumable=True)
+            self.service.files().update(fileId=file_id, media_body=media).execute()
+            
+            if os.path.exists(temp_path): os.remove(temp_path)
+            return True
+        except Exception as e:
+            print(f"Erro na edição: {e}")
+            return False

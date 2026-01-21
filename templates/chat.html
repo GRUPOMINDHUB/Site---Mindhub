@@ -67,6 +67,7 @@
 
                 // 4. Mostrar resposta da IA
                 box.innerHTML += `<div class="msg ia-msg">${dados.resposta}</div>`;
+                lidarComRespostaIA(dados);
                 box.scrollTop = box.scrollHeight;
 
             } catch (erro) {
@@ -124,7 +125,65 @@
             btn.disabled = false;
             btn.innerText = "🔄 Atualizar Base do Drive";
         }
-    }
+        }
+
+            // Função chamada quando a IA responde
+        function lidarComRespostaIA(dados) {
+            const textoIA = dados.resposta;
+            
+            // 1. Exibe o texto da IA no chat
+            //exibirMensagemNoChat("bot", textoIA);
+
+            // 2. Verifica se há uma sugestão de edição no texto
+            if (textoIA.includes("[SUGESTÃO DE EDIÇÃO]")) {
+                try {
+                    // Extrai os campos usando regex
+                    const fileId = textoIA.match(/ID:\s*([^\n\r]+)/)[1].trim();
+                    const nome = textoIA.match(/Arquivo:\s*([^\n\r]+)/)[1].trim();
+                    const alteracao = textoIA.match(/Alteração:\s*([^\n\r]+)/)[1].trim();
+
+                    // Cria o botão de confirmação
+                    criarBotaoConfirmacao(fileId, nome, alteracao);
+                } catch (e) {
+                    console.error("Erro ao extrair dados de edição:", e);
+                }
+            }
+        }
+
+        function criarBotaoConfirmacao(id, nome, texto) {
+            const chatContainer = document.getElementById('chat-box'); // Use o ID do seu container de mensagens
+            const btn = document.createElement('button');
+            
+            btn.innerHTML = `💾 Confirmar Alteração: <b>${nome}</b>`;
+            btn.className = "btn-confirmar-edicao";
+            
+            btn.onclick = function() {
+                btn.disabled = true;
+                btn.innerText = "⏳ Gravando no Drive...";
+
+                fetch('/executar-edicao', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        file_id: id,
+                        nome_arquivo: nome,
+                        texto: texto
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.mensagem);
+                    btn.remove(); // Remove o botão após o sucesso
+                })
+                .catch(() => {
+                    alert("Erro ao gravar alteração.");
+                    btn.disabled = false;
+                    btn.innerText = "Tentar Novamente";
+                });
+            };
+
+            chatContainer.appendChild(btn);
+        }
 
 
     </script>
