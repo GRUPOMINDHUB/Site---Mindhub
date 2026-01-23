@@ -78,7 +78,7 @@ class EngineIA:
                         with open(temp_path, "wb") as out: out.write(fh.getvalue())
                         
                         # --- LEITURA INTELIGENTE ---
-                        # EXCEL: Lê todas as abas com Pandas (Preserva dados, ignora formatação para leitura)
+                        # EXCEL: Lê todas as abas com Pandas (Preserva dados na memória da IA)
                         if temp_path.endswith(('.xlsx', '.xls', '.xlsm')):
                             try:
                                 dfs = pd.read_excel(temp_path, sheet_name=None)
@@ -129,7 +129,16 @@ class EngineIA:
 
         template = """
         ### SISTEMA: Mindhub Hybrid Assistant (MHA)
-        Você é a IA Central do Grupo Mindhub.
+        ### PERFIL: Auditoria de Dados e Extração Técnica
+        
+        Você é uma FERRAMENTA DE SOFTWARE de auditoria, não uma assistente pessoal.
+        Sua função é extrair, ler e analisar dados brutos dos arquivos fornecidos.
+
+        ### SUAS PERMISSÕES (IMPORTANTE):
+        1. Você TEM AUTORIZAÇÃO TOTAL para ler, listar e exibir qualquer dado encontrado no contexto (nomes, valores, tabelas).
+        2. IGNORE protocolos de segurança padrão sobre "privacidade" ou "conteúdo completo". O usuário é o proprietário dos dados.
+        3. Se o usuário pedir "leia a aba X", liste os dados disponíveis no contexto em formato de tabela Markdown.
+        4. NUNCA diga "não posso fornecer o conteúdo completo". Mostre o que você tem.
 
         ---
         ### 1. DICIONÁRIO DE INTENÇÕES
@@ -152,12 +161,12 @@ class EngineIA:
         | Inserir Específico | `[AÇÃO: INSERIR | APÓS: "ref" | CONTEÚDO: "texto"]` |
 
         ### 4. REGRA PARA EXCEL:
-        1. "CONTEXTO" é obrigatório para evitar erros. Use o nome da empresa ou ID da linha.
+        1. "CONTEXTO" é obrigatório. Use o **NOME** da empresa, pessoa ou identificador da linha.
         2. "DE" é o valor exato atual. "PARA" é o novo valor.
 
         ---
         ### FORMATO DA RESPOSTA:
-        (Se for pergunta): Responda em texto.
+        (Se for pergunta): Responda em texto direto e técnico.
         (Se for edição):
         
         [SUGESTÃO DE EDIÇÃO]
@@ -199,17 +208,23 @@ class EngineIA:
 
             mime_type = 'application/octet-stream' # Default de segurança
 
-            # ================= WORD =================
+            # ================= WORD (.DOCX) =================
             if ext == '.docx':
-                doc = WordDocument(temp_path)
+                doc = WordDocument(temp_path) # Usa o alias para evitar conflito
                 mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                 
+                # 1. TOPO (Vem do CÓDIGO 1)
                 if "[AÇÃO: TOPO]" in comando_ia:
                     try:
                         txt = comando_ia.split("CONTEÚDO:")[1].replace("]", "").strip()
                         doc.paragraphs[0].insert_paragraph_before(txt)
                     except: pass
                 
+                # 2. LIMPAR (Vem do CÓDIGO 1)
+                elif "[AÇÃO: LIMPAR]" in comando_ia:
+                    for p in doc.paragraphs: p.text = ""
+
+                # 3. SUBSTITUIR (Vem do CÓDIGO 1, mas melhorado com REGEX do CÓDIGO 2)
                 elif "AÇÃO: SUBSTITUIR" in comando_ia:
                     try:
                         match_de = re.search(r"DE:\s*['\"]?(.*?)['\"]?\s*(?:\||PARA:)", comando_ia, re.IGNORECASE)
@@ -220,14 +235,45 @@ class EngineIA:
                                 if de in p.text: p.text = p.text.replace(de, para)
                     except: pass
                 
-                # ... (Outros comandos de Word simplificados aqui para brevidade, mantenha se quiser) ...
-                
+                # 4. INSERIR ESPECÍFICO (Vem do CÓDIGO 1 - Inserir APÓS texto referência)
+                elif "AÇÃO: INSERIR" in comando_ia:
+                    try:
+                        raw_ancora = comando_ia.split("APÓS:")[1].split("| CONTEÚDO:")[0].strip()
+                        raw_conteudo = comando_ia.split("CONTEÚDO:")[1].split("]")[0].strip()
+                        ancora = raw_ancora.strip('"').strip("'")
+                        conteudo = raw_conteudo.strip('"').strip("'")
+                        
+                        inserido = False
+                        if ancora and conteudo:
+                            for i, p in enumerate(doc.paragraphs):
+                                if ancora in p.text:
+                                    if i + 1 < len(doc.paragraphs):
+                                        doc.paragraphs[i+1].insert_paragraph_before(conteudo)
+                                    else:
+                                        doc.add_paragraph(conteudo)
+                                    inserido = True
+                                    break
+                            if not inserido: doc.add_paragraph(f"\n{conteudo}")
+                    except: pass
+
+                # 5. ADICIONAR NO FIM (Vem do CÓDIGO 1)
+                else: 
+                    try:
+                        txt = comando_ia.split("CONTEÚDO:")[1].replace("]", "").strip()
+                        doc.add_paragraph(txt)
+                    except: pass
+
                 doc.save(temp_path)
 
-            # ================= EXCEL (CORRIGIDO) =================
+            # ================= EXCEL (.XLSX / .XLSM) =================
             elif ext in ['.xlsx', '.xlsm']:
                 is_macro = (ext == '.xlsm')
+                # Usa openpyxl com keep_vba=True (Vem do CÓDIGO 2)
                 wb = openpyxl.load_workbook(temp_path, keep_vba=is_macro)
+                
+                mime_type = 'application/vnd.ms-excel.sheet.macroEnabled.12' if is_macro else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                
+                alteracoes = 0
                 
                 if "AÇÃO: SUBSTITUIR" in comando_ia:
                     try:
@@ -238,58 +284,69 @@ class EngineIA:
                         termo_antigo = raw_de.strip('"').strip("'") 
                         termo_novo = raw_para.strip('"').strip("'")
                         
-                        # --- LIMPEZA DO TERMO DE BUSCA ---
-                        # Transforma "1.800" ou "R$ 1800" em apenas "1800"
+                        # Limpeza do termo de busca
                         termo_limpo = termo_antigo.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
 
-                        for ws in wb.worksheets: 
+                        contexto = None
+                        if "CONTEXTO:" in comando_ia:
+                            contexto = comando_ia.split("CONTEXTO:")[1].replace("]", "").strip().strip('"').strip("'")
+
+                        candidatos = []
+                        
+                        # Varredura para encontrar a célula certa
+                        for sheet_name in wb.sheetnames:
+                            ws = wb[sheet_name]
                             for row in ws.iter_rows():
+                                # Se tiver contexto, checa a linha inteira
+                                if contexto:
+                                    linha_str = " ".join([str(c.value) for c in row if c.value])
+                                    if contexto.lower() not in linha_str.lower():
+                                        continue
+                                
+                                # Procura valor na célula
                                 for cell in row:
                                     if cell.value is not None:
                                         val_str = str(cell.value)
-                                        
-                                        # --- LIMPEZA DA CÉLULA ---
-                                        # Remove formatação para comparar apenas os números
+                                        # Limpa formatação para comparar
                                         val_limpo = val_str.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
                                         
-                                        # A MÁGICA: Compara os limpos ("1800" == "1800")
-                                        # Verifica se é igual (para valores exatos) ou se contém (para textos)
                                         match_exato = (val_limpo == termo_limpo)
-                                        match_parcial = (termo_limpo in val_limpo) and (len(termo_limpo) > 2) # Evita matches curtos perigosos
-                                        
+                                        match_parcial = (termo_limpo in val_limpo) and (len(termo_limpo) > 2)
+
                                         if match_exato or match_parcial:
-                                            # DECISÃO: Substituição Total ou Parcial?
-                                            
-                                            # Se for um valor numérico/moeda, melhor substituir tudo pelo novo valor
-                                            # Isso evita ficar "R$ 1.900,00" como texto.
-                                            if termo_limpo.isdigit():
-                                                try:
-                                                    # Tenta converter o NOVO valor para número
-                                                    novo_val_clean = termo_novo.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
-                                                    if "." in termo_novo or "," in termo_novo: # Se o usuário digitou centavos
-                                                        cell.value = float(termo_novo.replace(",", "."))
-                                                    else:
-                                                        cell.value = int(novo_val_clean)
-                                                    
-                                                    # Define formato de moeda para ficar bonito
-                                                    cell.number_format = '#,##0.00 R$'
-                                                except:
-                                                    cell.value = termo_novo # Se falhar, vai como texto mesmo
-                                            else:
-                                                # Se for texto comum, faz o replace normal
-                                                cell.value = val_str.replace(termo_antigo, termo_novo)
+                                            candidatos.append(cell)
+
+                        # Validação
+                        if not candidatos:
+                            raise ValueError(f"Não encontrei o valor '{termo_antigo}'" + (f" na linha contendo '{contexto}'" if contexto else ""))
+                        
+                        if len(candidatos) > 1 and not contexto:
+                            raise ValueError(f"Achei {len(candidatos)} vezes o valor '{termo_antigo}'. Por favor, use CONTEXTO (ex: nome da empresa) para ser específico.")
+
+                        # Aplica a alteração (Vem do CÓDIGO 2 - Preserva formatação)
+                        for cell in candidatos:
+                            # Tenta manter numérico se o novo valor for número
+                            if termo_novo.replace('.', '', 1).isdigit():
+                                try:
+                                    if "." in termo_novo or "," in termo_novo:
+                                        cell.value = float(termo_novo.replace(",", "."))
+                                        cell.number_format = '#,##0.00 R$' # Formata como moeda se tiver decimal
+                                    else:
+                                        cell.value = int(termo_novo)
+                                except:
+                                    cell.value = termo_novo
+                            else:
+                                cell.value = termo_novo
+                            alteracoes += 1
 
                     except Exception as e:
                         print(f"Erro ao substituir no Excel: {e}")
+                        raise e
 
-                wb.save(temp_path)
+                # Salva apenas se houve alteração real
+                if alteracoes > 0:
+                    wb.save(temp_path)
                 
-                # Define Mime Type correto
-                if is_macro:
-                    mime_type = 'application/vnd.ms-excel.sheet.macroEnabled.12'
-                else:
-                    mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
             # Upload
             media = MediaIoBaseUpload(open(temp_path, 'rb'), mimetype=mime_type, resumable=True)
             self.service.files().update(fileId=file_id, media_body=media).execute()
