@@ -78,9 +78,9 @@
 
     <!-- Progresso por Mundo -->
     <div class="glass rounded-xl p-6">
-        <h3 class="text-lg font-semibold mb-4">Alunos por Mês (Progresso)</h3>
+        <h3 class="text-lg font-semibold mb-4">Alunos por Progresso</h3>
         <div class="space-y-4" id="chart-mundos">
-            <!-- Mundos serão gerados via JS -->
+            <!-- Mundos serão geradas via JS -->
         </div>
     </div>
 </div>
@@ -180,7 +180,7 @@
             bar.className = 'flex flex-col items-center';
             bar.innerHTML = `
             <span class="text-sm font-medium mb-2">${count}</span>
-            <div class="w-12 rounded-t-lg transition-all" 
+            <div class="w-12 rounded-t-lg transition-all"
                  style="height: ${Math.max(height, 5)}%; background: ${CORES[nota]}"></div>
         `;
             container.appendChild(bar);
@@ -206,7 +206,7 @@
             <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-${mundo.icone} text-mindhub-red"></i>
-                    <span class="text-sm">Mundo ${mundo.numero}: ${mundo.nome}</span>
+                    <span class="text-sm">${mundo.nome}</span>
                 </div>
                 <span class="text-sm text-gray-400">${mundo.alunos_ativos} alunos</span>
             </div>
