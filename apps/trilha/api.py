@@ -413,21 +413,53 @@ def api_monitor_estatisticas(request):
     
     alunos_inativos = qs_alunos.exclude(id__in=alunos_ativos_ids).count()
     
-    # Progresso por mundo
-    progresso_mundos = []
-    for mundo in Mundo.objects.filter(ativo=True).order_by('numero'):
-        total_steps_mundo = mundo.steps.count()
-        alunos_no_mundo = ProgressoAluno.objects.filter(
-            step__mundo=mundo,
-            status__in=[StatusProgresso.EM_ANDAMENTO, StatusProgresso.PENDENTE_VALIDACAO]
-        ).values('aluno').distinct().count()
+    # Progresso por mundo (Agrupado por Mês 1-6)
+    contagem_meses = {i: 0 for i in range(1, 7)}
+    
+    # Itera sobre os alunos FILTRADOS para contar onde cada um está
+    # (Poderia ser otimizado com aggregation no futuro)
+    for aluno in qs_alunos:
+        # Lógica simplificada para descobrir mundo atual
+        # Mundo atual = primeiro mundo com steps não concluídos
+        # Ou último mundo se tudo concluído
         
+        # Como get_mundo_atual pode ser complexo, vamos buscar direto
+        # Busca o primeiro mundo que tem steps não concluídos
+        mundo_atual = None
+        
+        # Otimização: Busca mundos do aluno
+        mundos_aluno = Mundo.objects.filter(aluno=aluno).order_by('numero')
+        
+        for mundo in mundos_aluno:
+            steps_pendentes = ProgressoAluno.objects.filter(
+                aluno=aluno,
+                step__mundo=mundo
+            ).exclude(status=StatusProgresso.CONCLUIDO).exists()
+            
+            if steps_pendentes:
+                mundo_atual = mundo
+                break
+        
+        # Se não achou com pendentes, pega o último (concluiu tudo)
+        if not mundo_atual and mundos_aluno.exists():
+            mundo_atual = mundos_aluno.last()
+            
+        if mundo_atual and 1 <= mundo_atual.numero <= 6:
+            contagem_meses[mundo_atual.numero] += 1
+            
+    progresso_mundos = []
+    nomes_meses_fixos = {
+        1: 'Mês 1', 2: 'Mês 2', 3: 'Mês 3', 
+        4: 'Mês 4', 5: 'Mês 5', 6: 'Mês 6'
+    }
+    
+    for i in range(1, 7):
         progresso_mundos.append({
-            'numero': mundo.numero,
-            'nome': mundo.nome,
-            'icone': mundo.icone,
-            'total_steps': total_steps_mundo,
-            'alunos_ativos': alunos_no_mundo
+            'numero': i,
+            'nome': nomes_meses_fixos[i],
+            'icone': 'calendar-check',
+            'total_steps': 0, # Não usado no gráfico simplificado
+            'alunos_ativos': contagem_meses[i]
         })
     
     return JsonResponse({

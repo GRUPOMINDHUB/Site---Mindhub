@@ -15,7 +15,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Submissões Pendentes -->
     <div class="glass rounded-xl p-6">
         <div class="flex items-center justify-between">
@@ -31,7 +31,7 @@
             Ver pendentes <i class="fas fa-arrow-right ml-1"></i>
         </a>
     </div>
-    
+
     <!-- Alunos Inativos -->
     <div class="glass rounded-xl p-6">
         <div class="flex items-center justify-between">
@@ -44,7 +44,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Média Geral -->
     <div class="glass rounded-xl p-6">
         <div class="flex items-center justify-between">
@@ -75,10 +75,10 @@
             <span>Nota 5</span>
         </div>
     </div>
-    
+
     <!-- Progresso por Mundo -->
     <div class="glass rounded-xl p-6">
-        <h3 class="text-lg font-semibold mb-4">Alunos por Mundo</h3>
+        <h3 class="text-lg font-semibold mb-4">Alunos por Mês (Progresso)</h3>
         <div class="space-y-4" id="chart-mundos">
             <!-- Mundos serão gerados via JS -->
         </div>
@@ -89,8 +89,8 @@
 <div class="glass rounded-xl p-6">
     <h3 class="text-lg font-semibold mb-4">Ações Rápidas</h3>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="{% url 'trilha:monitor_graph' %}" 
-           class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
+        <a href="{% url 'trilha:monitor_graph' %}"
+            class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
             <div class="w-10 h-10 bg-mindhub-red/20 rounded-lg flex items-center justify-center">
                 <i class="fas fa-project-diagram text-mindhub-red"></i>
             </div>
@@ -99,9 +99,9 @@
                 <p class="text-sm text-gray-400">Visão geral dos alunos</p>
             </div>
         </a>
-        
-        <a href="{% url 'trilha:monitor_validar' %}" 
-           class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
+
+        <a href="{% url 'trilha:monitor_validar' %}"
+            class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
             <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                 <i class="fas fa-clipboard-check text-yellow-500"></i>
             </div>
@@ -110,9 +110,9 @@
                 <p class="text-sm text-gray-400">Aprovar/Reprovar provas</p>
             </div>
         </a>
-        
-        <a href="/admin/" 
-           class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
+
+        <a href="/admin/"
+            class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
             <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                 <i class="fas fa-cog text-purple-500"></i>
             </div>
@@ -127,82 +127,82 @@
 
 {% block extra_js %}
 <script>
-const CORES = {
-    1: '#dc3545',
-    2: '#ff9800',
-    3: '#ffc107',
-    4: '#7cb342',
-    5: '#28a745'
-};
+    const CORES = {
+        1: '#dc3545',
+        2: '#ff9800',
+        3: '#ffc107',
+        4: '#7cb342',
+        5: '#28a745'
+    };
 
-async function loadDashboard() {
-    try {
-        const response = await fetch('/api/monitor/estatisticas/');
-        const data = await response.json();
-        
-        // Stats
-        document.getElementById('stat-total').textContent = data.total_alunos;
-        document.getElementById('stat-pendentes').textContent = data.submissoes_pendentes;
-        document.getElementById('stat-inativos').textContent = data.alunos_inativos;
-        
-        // Calcula média
-        const dist = data.distribuicao_notas;
-        let soma = 0, total = 0;
-        for (let nota in dist) {
-            soma += parseInt(nota) * dist[nota];
-            total += dist[nota];
+    async function loadDashboard() {
+        try {
+            const response = await fetch('/api/monitor/estatisticas/');
+            const data = await response.json();
+
+            // Stats
+            document.getElementById('stat-total').textContent = data.total_alunos;
+            document.getElementById('stat-pendentes').textContent = data.submissoes_pendentes;
+            document.getElementById('stat-inativos').textContent = data.alunos_inativos;
+
+            // Calcula média
+            const dist = data.distribuicao_notas;
+            let soma = 0, total = 0;
+            for (let nota in dist) {
+                soma += parseInt(nota) * dist[nota];
+                total += dist[nota];
+            }
+            const media = total > 0 ? (soma / total).toFixed(1) : '-';
+            document.getElementById('stat-media').textContent = media;
+
+            // Chart Notas
+            renderChartNotas(data.distribuicao_notas, data.total_alunos);
+
+            // Chart Mundos
+            renderChartMundos(data.progresso_mundos);
+
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
         }
-        const media = total > 0 ? (soma / total).toFixed(1) : '-';
-        document.getElementById('stat-media').textContent = media;
-        
-        // Chart Notas
-        renderChartNotas(data.distribuicao_notas, data.total_alunos);
-        
-        // Chart Mundos
-        renderChartMundos(data.progresso_mundos);
-        
-    } catch (error) {
-        console.error('Erro ao carregar dashboard:', error);
     }
-}
 
-function renderChartNotas(distribuicao, total) {
-    const container = document.getElementById('chart-notas');
-    container.innerHTML = '';
-    
-    const maxVal = Math.max(...Object.values(distribuicao), 1);
-    
-    for (let nota = 1; nota <= 5; nota++) {
-        const count = distribuicao[nota] || 0;
-        const height = (count / maxVal) * 100;
-        
-        const bar = document.createElement('div');
-        bar.className = 'flex flex-col items-center';
-        bar.innerHTML = `
+    function renderChartNotas(distribuicao, total) {
+        const container = document.getElementById('chart-notas');
+        container.innerHTML = '';
+
+        const maxVal = Math.max(...Object.values(distribuicao), 1);
+
+        for (let nota = 1; nota <= 5; nota++) {
+            const count = distribuicao[nota] || 0;
+            const height = (count / maxVal) * 100;
+
+            const bar = document.createElement('div');
+            bar.className = 'flex flex-col items-center';
+            bar.innerHTML = `
             <span class="text-sm font-medium mb-2">${count}</span>
             <div class="w-12 rounded-t-lg transition-all" 
                  style="height: ${Math.max(height, 5)}%; background: ${CORES[nota]}"></div>
         `;
-        container.appendChild(bar);
+            container.appendChild(bar);
+        }
     }
-}
 
-function renderChartMundos(mundos) {
-    const container = document.getElementById('chart-mundos');
-    container.innerHTML = '';
-    
-    if (mundos.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 text-center">Nenhum mundo cadastrado</p>';
-        return;
-    }
-    
-    const maxAlunos = Math.max(...mundos.map(m => m.alunos_ativos), 1);
-    
-    mundos.forEach(mundo => {
-        const percent = (mundo.alunos_ativos / maxAlunos) * 100;
-        
-        const item = document.createElement('div');
-        item.innerHTML = `
+    function renderChartMundos(mundos) {
+        const container = document.getElementById('chart-mundos');
+        container.innerHTML = '';
+
+        if (mundos.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-center">Nenhum mundo cadastrado</p>';
+            return;
+        }
+
+        const maxAlunos = Math.max(...mundos.map(m => m.alunos_ativos), 1);
+
+        mundos.forEach(mundo => {
+            const percent = (mundo.alunos_ativos / maxAlunos) * 100;
+
+            const item = document.createElement('div');
+            item.innerHTML = `
             <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-2">
                     <i class="fas fa-${mundo.icone} text-mindhub-red"></i>
@@ -214,14 +214,14 @@ function renderChartMundos(mundos) {
                 <div class="bg-mindhub-red h-2 rounded-full transition-all" style="width: ${percent}%"></div>
             </div>
         `;
-        container.appendChild(item);
-    });
-}
+            container.appendChild(item);
+        });
+    }
 
-function refreshData() {
-    loadDashboard();
-}
+    function refreshData() {
+        loadDashboard();
+    }
 
-document.addEventListener('DOMContentLoaded', loadDashboard);
+    document.addEventListener('DOMContentLoaded', loadDashboard);
 </script>
 {% endblock %}
