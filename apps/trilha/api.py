@@ -1098,12 +1098,23 @@ def api_criar_trilha_vazia(request, aluno_id):
     ]
     
     for i, nome in enumerate(nomes_mundos, start=1):
-        Mundo.objects.create(
+        mundo = Mundo.objects.create(
             aluno=aluno,
             numero=i,
             nome=nome,
             descricao='',
             objetivo=''
+        )
+        
+        # Cria um step inicial padrão para o mundo não ficar vazio
+        Step.objects.create(
+            mundo=mundo,
+            ordem=1,
+            titulo='Boas vindas',
+            descricao=f'Bem-vindo ao {nome}!',
+            instrucoes='Clique aqui para iniciar sua jornada.',
+            tipo_validacao='TEXTO',
+            pontos=10
         )
     
     return JsonResponse({
