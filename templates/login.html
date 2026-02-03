@@ -3,21 +3,27 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'estilo.css' %}">
     <title>Login - Mindhub</title>
 </head>
+<body class="login-page">
+    <div class="login-backdrop"></div>
 
+    <div class="login-card">
+        <div class="login-brand">
+            <h1 class="login-logo">MINDHUB</h1>
+            <p class="login-powered">Powered by Mindlink</p>
+        </div>
 
-<body>
-    <h1 class="titulo-boas-vindas">Acesse MindLink🧠</h1>
-    <div class="login-container">
-        <h2 style="color: #343a40; margin-bottom: 20px;">Grupo Mindhub 🏢</h2>
-        <label>E-mail</label>
-        <input type="email" class="input_login" id="email" placeholder="seu@email.com">
-        <label>Senha</label>
-        <input type="password" class="input_login" id="password" placeholder="sua senha">
-        <input type="button" class="input_btn" id="login_btn" value="Entrar">
+        <form class="login-form" id="login-form">
+            <label class="login-label">E-mail</label>
+            <input type="email" class="input_login" id="email" placeholder="seu@email.com" autocomplete="email">
+            <label class="login-label">Senha</label>
+            <input type="password" class="input_login" id="password" placeholder="sua senha" autocomplete="current-password">
+            <button type="button" class="input_btn" id="login_btn">Entrar</button>
+        </form>
     </div>
 
     <audio id="login-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
@@ -43,21 +49,13 @@
                 const dados = await resposta.json();
 
                 if (resposta.ok) {
-                    // Toca o som
                     som.play();
-
-                    // Efeito visual
                     document.body.classList.add('fade-out');
-                    
-                    // Admin e Monitor vão para o painel; Aluno vai para o chat IA
                     const role = dados.role || '';
                     const url = (role === 'ADMIN' || role === 'MONITOR') ? '/monitor/' : '/ia';
-                    
-                    setTimeout(() => {
-                        window.location.href = url;
-                    }, 1200);
+                    setTimeout(() => { window.location.href = url; }, 1200);
                 } else {
-                    alert(dados.mensagem || "Erro ao fazer login");
+                    alert(dados.mensagem || "Credenciais inválidas");
                 }
             } catch (erro) {
                 console.error("Erro na requisição:", erro);

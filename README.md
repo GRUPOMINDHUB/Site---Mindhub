@@ -1,6 +1,52 @@
-# MIGRAÇÃO FLASK → DJANGO - BANCO DE CONHECIMENTO IA
+# Site Mindhub
 
-## ✅ MIGRAÇÃO COMPLETA
+Projeto Django (Mindhub OS): Banco de Conhecimento IA, Trilha Gamificada, Graph View para Monitor.
+
+---
+
+## 🚀 Rodar localmente (servidor de desenvolvimento)
+
+### Opção 1: Script automático (Windows)
+
+1. Abra a pasta **Site-Mindhub** no terminal.
+2. Execute:
+   ```bash
+   run_local.bat
+   ```
+   O script cria `.env` com SQLite, aplica migrações, cria usuários de teste e sobe o servidor em **http://127.0.0.1:8080/**.
+
+### Opção 2: Comandos manuais
+
+1. **Crie o `.env`** (copie de `.env.example` e garanta `USE_SQLITE=1`):
+   ```bash
+   copy .env.example .env
+   ```
+   No `.env`, deixe: `USE_SQLITE=1` e `DEBUG=True`.
+
+2. **Instale dependências:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Migrações e usuários de teste:**
+   ```bash
+   python manage.py migrate
+   python manage.py criar_acessos_teste
+   python manage.py criar_dados_iniciais
+   ```
+
+4. **Suba o servidor:**
+   ```bash
+   python manage.py runserver 8080
+   ```
+
+5. Acesse **http://127.0.0.1:8080/** e faça login com:
+   - **Monitor:** `monitor@mindhub.com` / `monitor123`
+   - **Admin:** `admin@mindhub.com` / `admin123`
+
+---
+
+## ✅ MIGRAÇÃO FLASK → DJANGO
 
 Este projeto foi migrado de **Flask** para **Django** mantendo **100% das funcionalidades** e lógica de negócio.
 
