@@ -91,44 +91,135 @@ def monitor_validar(request):
 
 
 # ========================================
-# ÁREA DO ALUNO
+# ÁREA DO ALUNO - NAVEGAÇÃO DOIS NÍVEIS
 # ========================================
 
 @aluno_required
 def aluno_mapa(request):
+    """Redireciona para a home da trilha (novo sistema de dois níveis)."""
+    return redirect('trilha:home_trilha')
+
+
+@aluno_required
+def home_trilha(request):
     """
-    Mapa da Jornada Gamificada do Aluno.
-    Exibe o progresso nos Mundos e Steps estilo Mario World.
+    NÍVEL 1: Home Global da Trilha.
+    Exibe os 6 Restaurantes/Castelos (um por mês).
+    O aluno clica no mês atual para entrar no mapa de steps.
     """
     aluno = request.usuario
     
-    # Busca mundos do próprio aluno (trilha individual)
-    mundos = Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero')
+    # Busca todos os meses do aluno
+    meses = Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero')
     
-    # Se aluno não tem mundos próprios, verifica se tem trilha base
-    if not mundos.exists():
-        # Não inicializa mais automaticamente - o Monitor precisa configurar
-        pass
-    else:
-        # Inicializa progresso do aluno se for a primeira vez
-        primeiro_step = Step.objects.filter(
-            mundo__aluno=aluno, 
-            ativo=True
-        ).order_by('mundo__numero', 'ordem').first()
+    # Prepara dados dos meses com status
+    meses_data = []
+    mes_atual = None
+    
+    for mes in meses:
+        steps = mes.steps.filter(ativo=True).order_by('ordem')
+        total_steps = steps.count()
         
-        if primeiro_step:
-            progresso, criado = ProgressoAluno.objects.get_or_create(
-                aluno=aluno,
-                step=primeiro_step,
-                defaults={'status': StatusProgresso.EM_ANDAMENTO}
-            )
-            if criado:
-                progresso.iniciar()
+        # Conta steps concluídos
+        concluidos = 0
+        tem_em_andamento = False
+        
+        for step in steps:
+            progresso = ProgressoAluno.objects.filter(aluno=aluno, step=step).first()
+            if progresso:
+                if progresso.status == StatusProgresso.CONCLUIDO:
+                    concluidos += 1
+                elif progresso.status in [StatusProgresso.EM_ANDAMENTO, StatusProgresso.PENDENTE_VALIDACAO]:
+                    tem_em_andamento = True
+        
+        # Determina status do mês
+        if concluidos == total_steps and total_steps > 0:
+            status = 'CONCLUIDO'
+        elif tem_em_andamento or concluidos > 0:
+            status = 'ATUAL'
+            if not mes_atual:
+                mes_atual = mes
+        else:
+            status = 'FUTURO'
+        
+        meses_data.append({
+            'id': mes.id,
+            'numero': mes.numero,
+            'nome': mes.nome,
+            'status': status,
+            'concluidos': concluidos,
+            'total': total_steps,
+        })
     
-    return render(request, 'trilha/mapa_aluno.html', {
+    # Se não tem mês atual, o primeiro não-concluído é o atual
+    if not mes_atual and meses_data:
+        for m in meses_data:
+            if m['status'] != 'CONCLUIDO':
+                m['status'] = 'ATUAL'
+                break
+    
+    return render(request, 'trilha/home_trilha.html', {
         'usuario': aluno,
-        'mundos': mundos,
-        'page_title': 'Minha Jornada - Gestor de Sucesso'
+        'meses': meses_data,
+        'page_title': 'Império dos Meses - Gestor de Sucesso'
+    })
+
+
+@aluno_required
+def detalhe_mes(request, mes_id):
+    """
+    NÍVEL 2: Mapa Interno de Steps.
+    Exibe a trilha interna de um mês específico.
+    """
+    aluno = request.usuario
+    
+    try:
+        mes = Mundo.objects.get(id=mes_id, aluno=aluno, ativo=True)
+    except Mundo.DoesNotExist:
+        return redirect('trilha:home_trilha')
+    
+    # Busca steps do mês
+    steps = mes.steps.filter(ativo=True).order_by('ordem')
+    
+    # Prepara dados dos steps com status
+    steps_data = []
+    for step in steps:
+        progresso = ProgressoAluno.objects.filter(aluno=aluno, step=step).first()
+        status = progresso.status if progresso else StatusProgresso.BLOQUEADO
+        
+        steps_data.append({
+            'id': step.id,
+            'ordem': step.ordem,
+            'titulo': step.titulo,
+            'status': status,
+            'pontos': step.pontos,
+        })
+    
+    # Se não tem nenhum step em andamento, desbloqueia o primeiro
+    if steps_data and not any(s['status'] in [StatusProgresso.EM_ANDAMENTO, StatusProgresso.PENDENTE_VALIDACAO] for s in steps_data):
+        for s in steps_data:
+            if s['status'] == StatusProgresso.BLOQUEADO:
+                # Inicializa o progresso
+                step_obj = Step.objects.get(id=s['id'])
+                progresso, _ = ProgressoAluno.objects.get_or_create(
+                    aluno=aluno,
+                    step=step_obj,
+                    defaults={'status': StatusProgresso.EM_ANDAMENTO}
+                )
+                if progresso.status == StatusProgresso.BLOQUEADO:
+                    progresso.iniciar()
+                s['status'] = StatusProgresso.EM_ANDAMENTO
+                break
+    
+    return render(request, 'trilha/detalhe_mes.html', {
+        'usuario': aluno,
+        'mes': {
+            'id': mes.id,
+            'numero': mes.numero,
+            'nome': mes.nome,
+        },
+        'steps': steps_data,
+        'page_title': f'Mês {mes.numero}: {mes.nome}'
     })
 
 

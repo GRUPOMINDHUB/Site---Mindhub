@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Mindhub OS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════
+           PIXEL ART HD - BASE
+        ═══════════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        :root {
+            --mindhub-red: #e30613;
+            --gold: #ffd700;
+            --gold-dark: #daa520;
+        }
+
+        /* Temas por Mês */
+        [data-theme="1"] {
+            /* Deserto de Ouro */
+            --bg-top: #87CEEB;
+            --bg-bottom: #d4a574;
+            --ground: #d4a574;
+            --ground-dark: #b8944c;
+            --path: #c9a45c;
+            --path-border: #8b6914;
+            --accent: #ffd700;
+        }
+
+        [data-theme="2"] {
+            /* Reino dos Doces */
+            --bg-top: #ffb6c1;
+            --bg-bottom: #ffe4e1;
+            --ground: #f5deb3;
+            --ground-dark: #deb887;
+            --path: #d2691e;
+            --path-border: #8b4513;
+            --accent: #ff69b4;
+        }
+
+        [data-theme="3"] {
+            /* Vale do Sushi */
+            --bg-top: #1a1a2e;
+            --bg-bottom: #2d4a3e;
+            --ground: #2d4a3e;
+            --ground-dark: #1a3028;
+            --path: #4a3728;
+            --path-border: #2f1f14;
+            --accent: #dc143c;
+        }
+
+        [data-theme="4"] {
+            /* Metrópole Burger */
+            --bg-top: #1a1a2e;
+            --bg-bottom: #333333;
+            --ground: #333333;
+            --ground-dark: #1a1a1a;
+            --path: #444444;
+            --path-border: #222222;
+            --accent: #ff4500;
+        }
+
+        [data-theme="5"] {
+            /* Toscana Pizza */
+            --bg-top: #87CEEB;
+            --bg-bottom: #7cb342;
+            --ground: #7cb342;
+            --ground-dark: #558b2f;
+            --path: #8b7355;
+            --path-border: #5c4a32;
+            --accent: #8b0000;
+        }
+
+        [data-theme="6"] {
+            /* Império Gourmet */
+            --bg-top: #1a1a3a;
+            --bg-bottom: #2a2a5a;
+            --ground: #1a1a2e;
+            --ground-dark: #0a0a1e;
+            --path: #8b0000;
+            --path-border: #4a0000;
+            --accent: #ffd700;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           HUD - TOP BAR
+        ═══════════════════════════════════════════════════════════════════ */
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, #228b22 0%, #145214 100%);
+            border-bottom: 4px solid #0a3a0a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 4px 0 #0a3a0a;
+        }
+
+        .hud-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-voltar {
+            padding: 8px 16px;
+            background: #555;
+            border: 3px solid #fff;
+            box-shadow: 3px 3px 0 #000;
+            font-family: inherit;
+            font-size: 8px;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-voltar:hover {
+            background: #666;
+        }
+
+        .mes-badge {
+            padding: 6px 14px;
+            background: var(--accent);
+            border: 3px solid #fff;
+            box-shadow: 3px 3px 0 #000;
+            font-size: 8px;
+            color: #000;
+        }
+
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           MAP CONTAINER
+        ═══════════════════════════════════════════════════════════════════ */
+        .map-container {
+            padding: 80px 20px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            text-align: center;
+            font-size: 14px;
+            color: #fff;
+            text-shadow: 3px 3px 0 #000;
+            margin-bottom: 30px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           ILHA/TERRENO
+        ═══════════════════════════════════════════════════════════════════ */
+        .island {
+            position: relative;
+            background: var(--ground);
+            border: 4px solid var(--ground-dark);
+            padding: 30px 20px;
+            box-shadow:
+                0 8px 0 var(--ground-dark),
+                0 12px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .island::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 0;
+            right: 0;
+            height: 16px;
+            background: repeating-linear-gradient(90deg,
+                    transparent 0px, transparent 8px,
+                    #4a9828 8px, #4a9828 12px,
+                    transparent 12px, transparent 16px,
+                    #3a7818 16px, #3a7818 20px);
+            clip-path: polygon(0% 100%, 2% 40%, 4% 100%, 6% 30%, 8% 100%,
+                    10% 50%, 12% 100%, 14% 20%, 16% 100%, 18% 40%, 20% 100%,
+                    22% 30%, 24% 100%, 26% 50%, 28% 100%, 30% 20%, 32% 100%,
+                    34% 40%, 36% 100%, 38% 30%, 40% 100%, 42% 50%, 44% 100%,
+                    46% 20%, 48% 100%, 50% 40%, 52% 100%, 54% 30%, 56% 100%,
+                    58% 50%, 60% 100%, 62% 20%, 64% 100%, 66% 40%, 68% 100%,
+                    70% 30%, 72% 100%, 74% 50%, 76% 100%, 78% 20%, 80% 100%,
+                    82% 40%, 84% 100%, 86% 30%, 88% 100%, 90% 50%, 92% 100%,
+                    94% 20%, 96% 100%, 98% 40%, 100% 100%);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           SVG TRILHA
+        ═══════════════════════════════════════════════════════════════════ */
+        .trilha-svg {
+            width: 100%;
+            height: 350px;
+            overflow: visible;
+        }
+
+        .path-border {
+            fill: none;
+            stroke: var(--path-border);
+            stroke-width: 32;
+            stroke-linecap: square;
+        }
+
+        .path-main {
+            fill: none;
+            stroke: var(--path);
+            stroke-width: 26;
+            stroke-linecap: square;
+        }
+
+        .path-detail {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 4;
+            stroke-dasharray: 8 16;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           STEP NODES
+        ═══════════════════════════════════════════════════════════════════ */
+        .step-node {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .step-node:hover {
+            transform: scale(1.15);
+        }
+
+        .step-node.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .step-node.locked:hover {
+            transform: none;
+        }
+
+        .step-node.current {
+            animation: stepPulse 0.5s steps(2) infinite;
+        }
+
+        @keyframes stepPulse {
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.4) drop-shadow(0 0 10px var(--accent));
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           DRAWER
+        ═══════════════════════════════════════════════════════════════════ */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .drawer {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, #228b22 0%, #1a6b1a 100%);
+            border-left: 4px solid #0a3a0a;
+            z-index: 2001;
+            transform: translateX(100%);
+            transition: transform 0.2s;
+            overflow-y: auto;
+        }
+
+        .drawer.active {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 20px;
+            background: var(--accent);
+            border-bottom: 4px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .drawer-title {
+            font-size: 12px;
+            color: #000;
+            text-shadow: none;
+        }
+
+        .drawer-close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .drawer-body {
+            padding: 20px;
+        }
+
+        .info-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 3px solid #fff;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-card h3 {
+            font-size: 10px;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .info-card p {
+            font-size: 12px;
+            color: #fff;
+            line-height: 1.8;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .xp-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--gold);
+            border: 3px solid #fff;
+            box-shadow: 3px 3px 0 #000;
+            font-size: 10px;
+            color: #000;
+            margin-bottom: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: var(--mindhub-red);
+            border: 4px solid #fff;
+            box-shadow: 4px 4px 0 #000;
+            font-family: inherit;
+            font-size: 10px;
+            color: #fff;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .btn-submit:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        .form-field {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Segoe UI', sans-serif;
+            margin-bottom: 12px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           IA BUTTON
+        ═══════════════════════════════════════════════════════════════════ */
+        .ia-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--mindhub-red);
+            border: 4px solid #fff;
+            box-shadow: 4px 4px 0 #000;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1500;
+        }
+
+        .ia-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 11px;
+            }
+
+            .trilha-svg {
+                height: 280px;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="{{ mes.numero }}">
+    <!-- HUD -->
+    <header class="hud">
+        <div class="hud-left">
+            <a href="{% url 'trilha:home_trilha' %}" class="btn-voltar">
+                ◄ VOLTAR
+            </a>
+            <span class="mes-badge">MÊS {{ mes.numero }}</span>
+        </div>
+        <div class="hud-right">
+            <span class="stat">⭐ <span id="xp">0</span> XP</span>
+            <span class="stat">📊 <span id="progress">0/0</span></span>
+        </div>
+    </header>
+
+    <!-- Map -->
+    <main class="map-container">
+        <h1 class="page-title">{{ mes.nome }}</h1>
+
+        <div class="island">
+            <svg id="trilha-svg" class="trilha-svg" viewBox="0 0 1000 350">
+                <!-- Será renderizado via JS -->
+            </svg>
+        </div>
+    </main>
+
+    <!-- Drawer -->
+    <div class="drawer-overlay" id="overlay"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span class="drawer-title" id="drawer-title">ETAPA</span>
+            <button class="drawer-close" onclick="closeDrawer()">×</button>
+        </div>
+        <div class="drawer-body" id="drawer-body"></div>
+    </aside>
+
+    <!-- IA Button -->
+    <button class="ia-btn" onclick="alert('🧠 MindLink - Mês {{ mes.numero }}')">🧠</button>
+
+    <script>
+        const MES_ID = {{ mes.id }};
+        const MES_NUMERO = {{ mes.numero }};
+        const STEPS_DATA = {{ steps| safe }};
+
+        let avatarNode = null;
+
+        // Ícones por status
+        const STATUS_CONFIG = {
+            'BLOQUEADO': { fill: '#555', border: '#333', icon: '🔒' },
+            'EM_ANDAMENTO': { fill: '#ffd700', border: '#daa520', icon: '🎯' },
+            'CONCLUIDO': { fill: '#4ade80', border: '#22c55e', icon: '✓' },
+            'PENDENTE_VALIDACAO': { fill: '#fbbf24', border: '#f59e0b', icon: '⏳' }
+        };
+
+        function renderTrilha() {
+            const svg = document.getElementById('trilha-svg');
+            const stepCount = STEPS_DATA.length || 1;
+
+            // Calcular pontos
+            const startX = 80;
+            const endX = 920;
+            const availableWidth = endX - startX;
+            const points = [];
+
+            for (let i = 0; i < stepCount; i++) {
+                const x = startX + (availableWidth / (stepCount + 1)) * (i + 1);
+                const y = i % 2 === 0 ? 120 : 230;
+                points.push({ x, y });
+            }
+
+            // Construir path
+            let pathD = `M ${startX},175`;
+            points.forEach((pt, i) => {
+                if (i === 0) {
+                    pathD += ` Q ${startX + 30},175 ${pt.x},${pt.y}`;
+                } else {
+                    const prev = points[i - 1];
+                    const midX = (prev.x + pt.x) / 2;
+                    pathD += ` Q ${midX},${prev.y} ${midX},175 Q ${midX},${pt.y} ${pt.x},${pt.y}`;
+                }
+            });
+            const lastPt = points[points.length - 1] || { x: startX, y: 175 };
+            pathD += ` Q ${lastPt.x + 50},${lastPt.y} ${endX},175`;
+
+            let html = `
+                <path d="${pathD}" class="path-border"/>
+                <path d="${pathD}" class="path-main"/>
+                <path d="${pathD}" class="path-detail"/>
+            `;
+
+            // Renderizar steps
+            STEPS_DATA.forEach((step, i) => {
+                const pt = points[i];
+                if (!pt) return;
+
+                const config = STATUS_CONFIG[step.status] || STATUS_CONFIG['BLOQUEADO'];
+                const isLocked = step.status === 'BLOQUEADO';
+                const isCurrent = step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO';
+
+                html += `
+                    <g class="step-node ${isLocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}" 
+                       transform="translate(${pt.x}, ${pt.y})"
+                       onclick="${!isLocked ? `openDrawer(${step.id})` : ''}">
+                        <rect x="-28" y="-28" width="56" height="56" fill="${config.fill}" stroke="${config.border}" stroke-width="4"/>
+                        <rect x="-24" y="-24" width="48" height="48" fill="${config.fill}"/>
+                        <rect x="-22" y="-22" width="10" height="10" fill="rgba(255,255,255,0.3)"/>
+                        <text text-anchor="middle" dominant-baseline="central" font-size="22" fill="#fff" style="text-shadow:2px 2px 0 #000">${config.icon}</text>
+                        <text y="50" text-anchor="middle" font-size="11" fill="#fff" font-family="'Press Start 2P'" style="text-shadow:2px 2px 0 #000">${step.ordem}</text>
+                    </g>
+                `;
+
+                if (isCurrent) {
+                    avatarNode = { x: pt.x, y: pt.y - 50 };
+                }
+            });
+
+            // Avatar
+            if (avatarNode) {
+                html += `
+                    <g transform="translate(${avatarNode.x}, ${avatarNode.y})">
+                        <g style="animation: avatarBounce 0.6s ease-in-out infinite;">
+                            <ellipse cx="0" cy="35" rx="12" ry="4" fill="rgba(0,0,0,0.3)"/>
+                            <rect x="-10" y="5" width="20" height="28" fill="#fff" stroke="#ddd" stroke-width="2"/>
+                            <rect x="-2" y="10" width="4" height="4" fill="#333"/>
+                            <rect x="-2" y="18" width="4" height="4" fill="#333"/>
+                            <rect x="-12" y="-15" width="24" height="22" fill="#ffd5c8" stroke="#e8c4b8" stroke-width="2"/>
+                            <rect x="-8" y="-10" width="5" height="5" fill="#333"/>
+                            <rect x="3" y="-10" width="5" height="5" fill="#333"/>
+                            <rect x="-14" y="-28" width="28" height="14" fill="#fff" stroke="#ddd" stroke-width="1"/>
+                            <rect x="-10" y="-36" width="20" height="10" fill="#fff" stroke="#ddd" stroke-width="1"/>
+                            <rect x="-8" y="33" width="6" height="8" fill="#333"/>
+                            <rect x="2" y="33" width="6" height="8" fill="#333"/>
+                        </g>
+                    </g>
+                    <style>
+                        @keyframes avatarBounce {
+                            0%, 100% { transform: translateY(0); }
+                            50% { transform: translateY(-8px); }
+                        }
+                    </style>
+                `;
+            }
+
+            svg.innerHTML = html;
+
+            // Atualizar progresso
+            const concluidos = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').length;
+            document.getElementById('progress').textContent = `${concluidos}/${STEPS_DATA.length}`;
+            document.getElementById('xp').textContent = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').reduce((sum, s) => sum + s.pontos, 0);
+        }
+
+        async function openDrawer(stepId) {
+            try {
+                const res = await fetch(`/trilha/api/aluno/step/${stepId}/`);
+                const data = await res.json();
+
+                document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
+
+                let html = `
+                    <div class="info-card">
+                        <h3>📜 MISSÃO</h3>
+                        <p>${data.instrucoes || 'Complete esta etapa!'}</p>
+                    </div>
+                    <div class="xp-badge">⭐ +${data.pontos || 10} XP</div>
+                `;
+
+                if (data.feedback_anterior) {
+                    html += `<div class="info-card" style="border-color:#ff4444"><h3>⚠️ REFAZER</h3><p>${data.feedback_anterior}</p></div>`;
+                }
+
+                if (data.status === 'EM_ANDAMENTO') {
+                    const input = data.tipo_validacao === 'FOTO'
+                        ? `<input type="file" name="arquivo" accept="image/*" class="form-field" required>`
+                        : `<textarea name="resposta_texto" rows="4" class="form-field" placeholder="Sua resposta..." required></textarea>`;
+                    html += `<form onsubmit="submitStep(event,${data.id})"><input type="hidden" name="step_id" value="${data.id}">${input}<button type="submit" class="btn-submit">🚀 ENVIAR</button></form>`;
+                } else if (data.status === 'PENDENTE_VALIDACAO') {
+                    html += `<div class="info-card"><h3>⏳ AGUARDANDO</h3><p>O mentor está avaliando...</p></div>`;
+                } else if (data.status === 'CONCLUIDO') {
+                    html += `<div class="info-card" style="border-color:#22c55e"><h3>✅ APROVADO!</h3><p>+${data.pontos || 10} XP conquistados!</p></div>`;
+                }
+
+                document.getElementById('drawer-body').innerHTML = html;
+                document.getElementById('drawer').classList.add('active');
+                document.getElementById('overlay').classList.add('active');
+            } catch (e) { console.error(e); }
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        document.getElementById('overlay').addEventListener('click', closeDrawer);
+
+        async function submitStep(e, id) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            const btn = form.querySelector('button');
+            btn.textContent = '⏳...';
+            btn.disabled = true;
+
+            try {
+                const r = await fetch('/trilha/api/aluno/submeter/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: fd
+                });
+                if (r.ok) {
+                    closeDrawer();
+                    window.location.reload();
+                } else {
+                    const d = await r.json();
+                    alert('Erro: ' + (d.error || 'Tente novamente'));
+                    btn.textContent = '🚀 ENVIAR';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Erro de conexão');
+                btn.textContent = '🚀 ENVIAR';
+                btn.disabled = false;
+            }
+        }
+
+        function getCookie(n) {
+            let v = null;
+            document.cookie.split(';').forEach(c => {
+                c = c.trim();
+                if (c.startsWith(n + '=')) v = decodeURIComponent(c.substring(n.length + 1));
+            });
+            return v;
+        }
+
+        document.addEventListener('DOMContentLoaded', renderTrilha);
+    </script>
+</body>
+
+</html>

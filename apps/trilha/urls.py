@@ -13,8 +13,10 @@ urlpatterns = [
     path('monitor/validar/', views.monitor_validar, name='monitor_validar'),
     path('gerenciar/<int:aluno_id>/', views.gerenciar_trilha, name='gerenciar_trilha'),
     
-    # Área do Aluno
-    path('mapa/', views.aluno_mapa, name='aluno_mapa'),
+    # Área do Aluno - Navegação de Dois Níveis
+    path('mapa/', views.aluno_mapa, name='aluno_mapa'),  # Redireciona para home-trilha
+    path('home-trilha/', views.home_trilha, name='home_trilha'),  # Nível 1: Mapa Global de Meses
+    path('mes/<int:mes_id>/', views.detalhe_mes, name='detalhe_mes'),  # Nível 2: Mapa Interno de Steps
     
     # API endpoints para Monitor (Graph View)
     path('api/monitor/alunos/', api.api_monitor_alunos, name='api_monitor_alunos'),
