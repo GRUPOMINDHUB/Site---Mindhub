@@ -1085,7 +1085,7 @@
         // ═══════════════════════════════════════════════════════════════════
         async function loadProgress() {
             try {
-                const res = await fetch('/trilha/api/aluno/progresso/');
+                const res = await fetch('/api/aluno/progresso/');
                 const data = await res.json();
 
                 document.getElementById('xp').textContent = data.total_pontos || 0;
@@ -1133,7 +1133,7 @@
         // ═══════════════════════════════════════════════════════════════════
         async function openDrawer(stepId) {
             try {
-                const res = await fetch(`/trilha/api/aluno/step/${stepId}/`);
+                const res = await fetch(`/api/aluno/step/${stepId}/`);
                 const data = await res.json();
 
                 document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
@@ -1183,7 +1183,7 @@
             btn.disabled = true;
 
             try {
-                const r = await fetch('/trilha/api/aluno/submeter/', {
+                const r = await fetch('/api/aluno/submeter/', {
                     method: 'POST',
                     headers: { 'X-CSRFToken': getCookie('csrftoken') },
                     body: fd
