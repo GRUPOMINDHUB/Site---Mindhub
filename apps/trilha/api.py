@@ -1013,12 +1013,12 @@ def api_criar_trilha_vazia(request, aluno_id):
         return JsonResponse({'error': 'Aluno já possui trilha'}, status=400)
     
     nomes_mundos = [
-        'Mês 1 - Fundamentos',
-        'Mês 2 - Operações',
-        'Mês 3 - Finanças',
-        'Mês 4 - Equipe',
-        'Mês 5 - Marketing',
-        'Mês 6 - Escala'
+        'Deserto de Ouro',
+        'Reino dos Doces',
+        'Vale do Sushi',
+        'Metrópole Burger',
+        'Toscana Pizza',
+        'Império Gourmet'
     ]
     
     for i, nome in enumerate(nomes_mundos, start=1):

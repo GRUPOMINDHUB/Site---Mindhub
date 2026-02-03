@@ -708,13 +708,24 @@
                 return;
             }
 
+            const THEME_COLORS = {
+                1: '#daa520', // Deserto
+                2: '#ff69b4', // Doces
+                3: '#dc143c', // Sushi
+                4: '#ff4500', // Burger
+                5: '#7cb342', // Pizza
+                6: '#9370db'  // Gourmet
+            };
+
             let html = '';
             mundosData.forEach(mundo => {
+                const accentColor = THEME_COLORS[mundo.numero] || '#666';
+
                 html += `
-                    <div class="mundo-accordion" data-mundo-id="${mundo.id}">
+                    <div class="mundo-accordion" data-mundo-id="${mundo.id}" style="border-left: 5px solid ${accentColor}">
                         <div class="mundo-header" onclick="toggleMundo(${mundo.id})">
                             <div class="mundo-header-left">
-                                <div class="mundo-numero">${mundo.numero}</div>
+                                <div class="mundo-numero" style="background: ${accentColor}">${mundo.numero}</div>
                                 <div>
                                     <div class="mundo-title">${mundo.nome}</div>
                                     <div class="mundo-subtitle">${mundo.steps.length} steps</div>
