@@ -550,7 +550,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-left">
-            <a href="/trilha/monitor/graph/" class="back-btn">
+            <a href="/monitor/graph/" class="back-btn">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="header-info">
@@ -678,7 +678,7 @@
         // ===== API =====
         async function carregarTrilha() {
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/`);
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/`);
                 const data = await res.json();
                 mundosData = data.mundos || [];
                 renderMundos();
@@ -836,7 +836,7 @@
             };
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/mundo/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/mundo/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -862,7 +862,7 @@
             if (!confirm('Tem certeza que deseja excluir este mundo e todos os seus steps?')) return;
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/mundo/${mundoId}/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/mundo/${mundoId}/`, {
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 });
@@ -951,7 +951,7 @@
             };
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/step/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/step/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -977,7 +977,7 @@
             if (!confirm('Tem certeza que deseja excluir este step?')) return;
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/step/${stepId}/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/step/${stepId}/`, {
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 });
@@ -995,7 +995,7 @@
 
         async function salvarOrdem(mundoId, stepIds) {
             try {
-                await fetch(`/trilha/api/trilha/${ALUNO_ID}/reordenar/`, {
+                await fetch(`/api/trilha/${ALUNO_ID}/reordenar/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1014,7 +1014,7 @@
             if (!confirm('Clonar a Trilha Base para este aluno?')) return;
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/clonar/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/clonar/`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 });
@@ -1035,7 +1035,7 @@
             if (!confirm('Criar 6 mundos vazios para este aluno?')) return;
 
             try {
-                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/criar-vazia/`, {
+                const res = await fetch(`/api/trilha/${ALUNO_ID}/criar-vazia/`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': getCookie('csrftoken') }
                 });
