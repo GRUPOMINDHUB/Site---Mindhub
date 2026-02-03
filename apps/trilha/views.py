@@ -3,6 +3,7 @@ Views do app Trilha - Mindhub OS.
 """
 from django.shortcuts import render, redirect
 from django.http import HttpResponseForbidden
+import json
 
 from apps.usuarios.models import Usuario, RoleChoices
 from .models import Mundo, Step, ProgressoAluno, StatusProgresso
@@ -165,29 +166,8 @@ def home_trilha(request):
     })
 
 
-import json
-
-# ... (código existente)
-
 @aluno_required
 def detalhe_mes(request, mes_id):
-    # ... (código existente)
-    
-    # Prepara dados dos steps com status
-    steps_data = []
-    # ... (loop existente)
-
-    return render(request, 'trilha/detalhe_mes.html', {
-        'usuario': aluno,
-        'mes': {
-            'id': mes.id,
-            'numero': mes.numero,
-            'nome': mes.nome,
-        },
-        'steps': steps_data,
-        'steps_json': json.dumps(steps_data),
-        'page_title': f'Mês {mes.numero}: {mes.nome}'
-    })
     """
     NÍVEL 2: Mapa Interno de Steps.
     Exibe a trilha interna de um mês específico.
@@ -254,7 +234,8 @@ def detalhe_mes(request, mes_id):
             'nome': mes.nome,
         },
         'steps': steps_data,
-        'page_title': f'Mês {mes.numero}: {mes.nome} [DEBUG: {steps.count()} Steps]'
+        'steps_json': json.dumps(steps_data),
+        'page_title': f'Mês {mes.numero}: {mes.nome}'
     })
 
 
