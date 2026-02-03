@@ -458,3 +458,581 @@ def api_monitor_enviar_alerta(request, aluno_id):
     
     status_code = 200 if resultado['success'] else 400
     return JsonResponse(resultado, status=status_code)
+
+
+# ========================================
+# API DO ALUNO
+# ========================================
+
+def verificar_aluno(request):
+    """Verifica se o usuário logado é aluno."""
+    email = request.session.get('usuario')
+    if not email:
+        return None, JsonResponse({'error': 'Não autenticado'}, status=401)
+    
+    try:
+        usuario = Usuario.objects.get(email=email)
+        if usuario.role != RoleChoices.ALUNO:
+            return None, JsonResponse({'error': 'Acesso negado'}, status=403)
+        return usuario, None
+    except Usuario.DoesNotExist:
+        return None, JsonResponse({'error': 'Usuário não encontrado'}, status=404)
+
+
+@require_http_methods(["GET"])
+def api_aluno_progresso(request):
+    """
+    GET /api/aluno/progresso/
+    Retorna o progresso completo do aluno com mundos e steps.
+    """
+    aluno, error = verificar_aluno(request)
+    if error:
+        return error
+    
+    mundos_data = []
+    total_pontos = 0
+    total_steps = 0
+    steps_concluidos_total = 0
+    step_atual = None
+    
+    for mundo in Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero'):
+        steps_mundo = mundo.steps.filter(ativo=True).order_by('ordem')
+        steps_data = []
+        steps_concluidos = 0
+        
+        for step in steps_mundo:
+            total_steps += 1
+            
+            # Busca progresso do aluno neste step
+            try:
+                progresso = ProgressoAluno.objects.get(aluno=aluno, step=step)
+                status = progresso.status
+            except ProgressoAluno.DoesNotExist:
+                status = StatusProgresso.BLOQUEADO
+            
+            if status == StatusProgresso.CONCLUIDO:
+                steps_concluidos += 1
+                steps_concluidos_total += 1
+                total_pontos += step.pontos
+            
+            if status in [StatusProgresso.EM_ANDAMENTO, StatusProgresso.PENDENTE_VALIDACAO] and not step_atual:
+                step_atual = {
+                    'id': step.id,
+                    'titulo': step.titulo,
+                    'mundo': mundo.numero,
+                    'status': status
+                }
+            
+            steps_data.append({
+                'id': step.id,
+                'ordem': step.ordem,
+                'titulo': step.titulo,
+                'pontos': step.pontos,
+                'status': status
+            })
+        
+        porcentagem = round((steps_concluidos / len(steps_data) * 100) if steps_data else 0, 1)
+        
+        mundos_data.append({
+            'numero': mundo.numero,
+            'nome': mundo.nome,
+            'icone': mundo.icone,
+            'cor': mundo.cor_primaria,
+            'total_steps': len(steps_data),
+            'steps_concluidos': steps_concluidos,
+            'porcentagem': porcentagem,
+            'steps': steps_data
+        })
+    
+    porcentagem_geral = round((steps_concluidos_total / total_steps * 100) if total_steps > 0 else 0, 1)
+    
+    return JsonResponse({
+        'mundos': mundos_data,
+        'total_pontos': total_pontos,
+        'total_steps': total_steps,
+        'steps_concluidos': steps_concluidos_total,
+        'porcentagem_geral': porcentagem_geral,
+        'step_atual': step_atual
+    })
+
+
+@require_http_methods(["GET"])
+def api_aluno_step_detalhe(request, step_id):
+    """
+    GET /api/aluno/step/<id>/
+    Retorna detalhes de um step específico.
+    """
+    aluno, error = verificar_aluno(request)
+    if error:
+        return error
+    
+    try:
+        step = Step.objects.select_related('mundo').get(id=step_id, ativo=True)
+    except Step.DoesNotExist:
+        return JsonResponse({'error': 'Step não encontrado'}, status=404)
+    
+    # Busca progresso
+    try:
+        progresso = ProgressoAluno.objects.get(aluno=aluno, step=step)
+        status = progresso.status
+    except ProgressoAluno.DoesNotExist:
+        status = StatusProgresso.BLOQUEADO
+    
+    # Busca feedback anterior (se reprovado)
+    feedback_anterior = None
+    ultima_submissao = Submissao.objects.filter(
+        progresso__aluno=aluno,
+        progresso__step=step,
+        aprovado=False
+    ).order_by('-data_envio').first()
+    
+    if ultima_submissao:
+        feedback_anterior = ultima_submissao.feedback
+    
+    return JsonResponse({
+        'id': step.id,
+        'ordem': step.ordem,
+        'titulo': step.titulo,
+        'descricao': step.descricao,
+        'instrucoes': step.instrucoes,
+        'tipo_validacao': step.tipo_validacao,
+        'pontos': step.pontos,
+        'status': status,
+        'mundo': {
+            'numero': step.mundo.numero,
+            'nome': step.mundo.nome
+        },
+        'feedback_anterior': feedback_anterior
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_aluno_submeter(request):
+    """
+    POST /api/aluno/submeter/
+    Envia uma submissão para validação.
+    """
+    aluno, error = verificar_aluno(request)
+    if error:
+        return error
+    
+    step_id = request.POST.get('step_id')
+    if not step_id:
+        return JsonResponse({'error': 'step_id é obrigatório'}, status=400)
+    
+    try:
+        step = Step.objects.get(id=step_id, ativo=True)
+    except Step.DoesNotExist:
+        return JsonResponse({'error': 'Step não encontrado'}, status=404)
+    
+    # Verifica se o step está em andamento
+    try:
+        progresso = ProgressoAluno.objects.get(aluno=aluno, step=step)
+        if progresso.status != StatusProgresso.EM_ANDAMENTO:
+            return JsonResponse({'error': 'Este step não está em andamento'}, status=400)
+    except ProgressoAluno.DoesNotExist:
+        return JsonResponse({'error': 'Você ainda não iniciou este step'}, status=400)
+    
+    # Cria a submissão
+    submissao = Submissao(progresso=progresso)
+    
+    # Processa baseado no tipo de validação
+    if step.tipo_validacao == 'FOTO':
+        arquivo = request.FILES.get('arquivo')
+        if not arquivo:
+            return JsonResponse({'error': 'Arquivo é obrigatório'}, status=400)
+        submissao.arquivo = arquivo
+        
+    elif step.tipo_validacao == 'TEXTO':
+        texto = request.POST.get('resposta_texto', '').strip()
+        if not texto:
+            return JsonResponse({'error': 'Resposta é obrigatória'}, status=400)
+        submissao.resposta_texto = texto
+        
+    elif step.tipo_validacao == 'FORMULARIO':
+        # JSON com as respostas do formulário
+        try:
+            formulario = json.loads(request.POST.get('resposta_formulario', '{}'))
+            submissao.resposta_formulario = formulario
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Dados do formulário inválidos'}, status=400)
+    
+    submissao.save()
+    
+    # Atualiza status do progresso
+    progresso.enviar_para_validacao()
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Submissão enviada para validação!',
+        'submissao_id': submissao.id
+    })
+
+
+# ========================================
+# APIs DE GERENCIAMENTO DE TRILHAS (CMS)
+# ========================================
+
+def verificar_acesso_trilha(request, aluno_id):
+    """
+    Verifica se o usuário tem permissão para gerenciar a trilha do aluno.
+    ADMIN: todos os alunos
+    MONITOR: apenas seus alunos_responsaveis
+    """
+    email = request.session.get('usuario')
+    if not email:
+        return None, None, JsonResponse({'error': 'Não autenticado'}, status=401)
+    
+    try:
+        usuario = Usuario.objects.get(email=email)
+        aluno = Usuario.objects.get(id=aluno_id, role=RoleChoices.ALUNO)
+        
+        # ADMIN pode acessar todos
+        if usuario.role == RoleChoices.ADMIN:
+            return usuario, aluno, None
+        
+        # MONITOR só pode acessar seus alunos
+        if usuario.role == RoleChoices.MONITOR:
+            if aluno.monitor_responsavel_id == usuario.id:
+                return usuario, aluno, None
+            return None, None, JsonResponse({'error': 'Sem permissão para este aluno'}, status=403)
+        
+        return None, None, JsonResponse({'error': 'Acesso negado'}, status=403)
+        
+    except Usuario.DoesNotExist:
+        return None, None, JsonResponse({'error': 'Usuário não encontrado'}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_trilha_aluno(request, aluno_id):
+    """
+    GET /api/trilha/{aluno_id}/
+    Retorna mundos e steps do aluno para o CMS.
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    mundos = Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero')
+    
+    data = {
+        'aluno': {
+            'id': aluno.id,
+            'nome': aluno.nome or aluno.email,
+            'email': aluno.email
+        },
+        'mundos': []
+    }
+    
+    for mundo in mundos:
+        mundo_data = {
+            'id': mundo.id,
+            'numero': mundo.numero,
+            'nome': mundo.nome,
+            'descricao': mundo.descricao,
+            'objetivo': mundo.objetivo,
+            'steps': []
+        }
+        
+        for step in mundo.steps.filter(ativo=True).order_by('ordem'):
+            mundo_data['steps'].append({
+                'id': step.id,
+                'ordem': step.ordem,
+                'titulo': step.titulo,
+                'descricao': step.descricao,
+                'instrucoes': step.instrucoes,
+                'tipo_validacao': step.tipo_validacao,
+                'config_formulario': step.config_formulario,
+                'pontos': step.pontos
+            })
+        
+        data['mundos'].append(mundo_data)
+    
+    return JsonResponse(data)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_salvar_mundo(request, aluno_id):
+    """
+    POST /api/trilha/{aluno_id}/mundo/
+    Cria ou atualiza um mundo.
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    
+    mundo_id = data.get('id')
+    
+    if mundo_id:
+        # Atualizar existente
+        try:
+            mundo = Mundo.objects.get(id=mundo_id, aluno=aluno)
+            mundo.nome = data.get('nome', mundo.nome)
+            mundo.descricao = data.get('descricao', mundo.descricao)
+            mundo.objetivo = data.get('objetivo', mundo.objetivo)
+            mundo.numero = data.get('numero', mundo.numero)
+            mundo.save()
+        except Mundo.DoesNotExist:
+            return JsonResponse({'error': 'Mundo não encontrado'}, status=404)
+    else:
+        # Criar novo
+        ultimo_numero = Mundo.objects.filter(aluno=aluno).aggregate(Max('numero'))['numero__max'] or 0
+        mundo = Mundo.objects.create(
+            aluno=aluno,
+            numero=ultimo_numero + 1,
+            nome=data.get('nome', f'Mundo {ultimo_numero + 1}'),
+            descricao=data.get('descricao', ''),
+            objetivo=data.get('objetivo', '')
+        )
+    
+    return JsonResponse({
+        'success': True,
+        'mundo': {
+            'id': mundo.id,
+            'numero': mundo.numero,
+            'nome': mundo.nome
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_salvar_step(request, aluno_id):
+    """
+    POST /api/trilha/{aluno_id}/step/
+    Cria ou atualiza um step.
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    
+    step_id = data.get('id')
+    mundo_id = data.get('mundo_id')
+    
+    # Verificar se o mundo pertence ao aluno
+    try:
+        mundo = Mundo.objects.get(id=mundo_id, aluno=aluno)
+    except Mundo.DoesNotExist:
+        return JsonResponse({'error': 'Mundo não encontrado'}, status=404)
+    
+    if step_id:
+        # Atualizar existente
+        try:
+            step = Step.objects.get(id=step_id, mundo=mundo)
+            step.titulo = data.get('titulo', step.titulo)
+            step.descricao = data.get('descricao', step.descricao)
+            step.instrucoes = data.get('instrucoes', step.instrucoes)
+            step.tipo_validacao = data.get('tipo_validacao', step.tipo_validacao)
+            step.config_formulario = data.get('config_formulario', step.config_formulario)
+            step.pontos = data.get('pontos', step.pontos)
+            step.save()
+        except Step.DoesNotExist:
+            return JsonResponse({'error': 'Step não encontrado'}, status=404)
+    else:
+        # Criar novo
+        ultima_ordem = Step.objects.filter(mundo=mundo).aggregate(Max('ordem'))['ordem__max'] or 0
+        step = Step.objects.create(
+            mundo=mundo,
+            ordem=ultima_ordem + 1,
+            titulo=data.get('titulo', 'Novo Step'),
+            descricao=data.get('descricao', ''),
+            instrucoes=data.get('instrucoes', ''),
+            tipo_validacao=data.get('tipo_validacao', 'FOTO'),
+            config_formulario=data.get('config_formulario'),
+            pontos=data.get('pontos', 10)
+        )
+    
+    return JsonResponse({
+        'success': True,
+        'step': {
+            'id': step.id,
+            'ordem': step.ordem,
+            'titulo': step.titulo
+        }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_reordenar_steps(request, aluno_id):
+    """
+    POST /api/trilha/{aluno_id}/reordenar/
+    Atualiza a ordem dos steps dentro de um mundo.
+    Body: {"mundo_id": 1, "step_ids": [3, 1, 2]}
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    
+    mundo_id = data.get('mundo_id')
+    step_ids = data.get('step_ids', [])
+    
+    try:
+        mundo = Mundo.objects.get(id=mundo_id, aluno=aluno)
+    except Mundo.DoesNotExist:
+        return JsonResponse({'error': 'Mundo não encontrado'}, status=404)
+    
+    # Atualiza a ordem de cada step
+    for ordem, step_id in enumerate(step_ids, start=1):
+        Step.objects.filter(id=step_id, mundo=mundo).update(ordem=ordem)
+    
+    return JsonResponse({'success': True})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_deletar_step(request, aluno_id, step_id):
+    """
+    DELETE /api/trilha/{aluno_id}/step/{step_id}/
+    Remove um step (soft delete via ativo=False).
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    try:
+        step = Step.objects.get(id=step_id, mundo__aluno=aluno)
+        step.ativo = False
+        step.save()
+        return JsonResponse({'success': True})
+    except Step.DoesNotExist:
+        return JsonResponse({'error': 'Step não encontrado'}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_deletar_mundo(request, aluno_id, mundo_id):
+    """
+    DELETE /api/trilha/{aluno_id}/mundo/{mundo_id}/
+    Remove um mundo e seus steps (soft delete via ativo=False).
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    try:
+        mundo = Mundo.objects.get(id=mundo_id, aluno=aluno)
+        mundo.ativo = False
+        mundo.save()
+        # Desativa steps também
+        mundo.steps.update(ativo=False)
+        return JsonResponse({'success': True})
+    except Mundo.DoesNotExist:
+        return JsonResponse({'error': 'Mundo não encontrado'}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_clonar_trilha_base(request, aluno_id):
+    """
+    POST /api/trilha/{aluno_id}/clonar/
+    Clona a Trilha Base (mundos com aluno=null) para o aluno.
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    # Verifica se aluno já tem mundos
+    if Mundo.objects.filter(aluno=aluno, ativo=True).exists():
+        return JsonResponse({'error': 'Aluno já possui trilha. Delete antes de clonar.'}, status=400)
+    
+    # Busca trilha base (mundos sem aluno)
+    mundos_base = Mundo.objects.filter(aluno__isnull=True, ativo=True).prefetch_related('steps')
+    
+    if not mundos_base.exists():
+        return JsonResponse({'error': 'Nenhuma Trilha Base encontrada'}, status=404)
+    
+    # Clona cada mundo e seus steps
+    mundos_criados = 0
+    steps_criados = 0
+    
+    for mundo_base in mundos_base:
+        novo_mundo = Mundo.objects.create(
+            aluno=aluno,
+            numero=mundo_base.numero,
+            nome=mundo_base.nome,
+            descricao=mundo_base.descricao,
+            objetivo=mundo_base.objetivo,
+            icone=mundo_base.icone,
+            cor_primaria=mundo_base.cor_primaria
+        )
+        mundos_criados += 1
+        
+        for step_base in mundo_base.steps.filter(ativo=True):
+            Step.objects.create(
+                mundo=novo_mundo,
+                ordem=step_base.ordem,
+                titulo=step_base.titulo,
+                descricao=step_base.descricao,
+                instrucoes=step_base.instrucoes,
+                tipo_validacao=step_base.tipo_validacao,
+                config_formulario=step_base.config_formulario,
+                pontos=step_base.pontos
+            )
+            steps_criados += 1
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Trilha clonada: {mundos_criados} mundos e {steps_criados} steps criados.',
+        'mundos_criados': mundos_criados,
+        'steps_criados': steps_criados
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_criar_trilha_vazia(request, aluno_id):
+    """
+    POST /api/trilha/{aluno_id}/criar-vazia/
+    Cria 6 mundos vazios para o aluno.
+    """
+    usuario, aluno, error = verificar_acesso_trilha(request, aluno_id)
+    if error:
+        return error
+    
+    # Verifica se aluno já tem mundos
+    if Mundo.objects.filter(aluno=aluno, ativo=True).exists():
+        return JsonResponse({'error': 'Aluno já possui trilha'}, status=400)
+    
+    nomes_mundos = [
+        'Mês 1 - Fundamentos',
+        'Mês 2 - Operações',
+        'Mês 3 - Finanças',
+        'Mês 4 - Equipe',
+        'Mês 5 - Marketing',
+        'Mês 6 - Escala'
+    ]
+    
+    for i, nome in enumerate(nomes_mundos, start=1):
+        Mundo.objects.create(
+            aluno=aluno,
+            numero=i,
+            nome=nome,
+            descricao='',
+            objetivo=''
+        )
+    
+    return JsonResponse({
+        'success': True,
+        'message': '6 mundos vazios criados para o aluno.'
+    })
+
+

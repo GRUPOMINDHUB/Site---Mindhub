@@ -23,11 +23,20 @@ class StatusProgresso(models.TextChoices):
 class Mundo(models.Model):
     """
     Representa um Mundo na trilha (1 a 6).
-    Cada Mundo tem um tema relacionado à gestão de restaurante.
+    Cada Mundo pertence a um aluno específico ou é um template base (aluno=null).
     """
-    numero = models.IntegerField(unique=True, help_text="Número do mundo (1-6)")
+    aluno = models.ForeignKey(
+        'usuarios.Usuario',
+        on_delete=models.CASCADE,
+        related_name='mundos_personalizados',
+        null=True,
+        blank=True,
+        help_text="Aluno dono desta trilha. Null = Trilha Base (template)"
+    )
+    numero = models.IntegerField(help_text="Número do mundo (1-6)")
     nome = models.CharField(max_length=100)
     descricao = models.TextField(blank=True)
+    objetivo = models.TextField(blank=True, help_text="Objetivo do mundo")
     icone = models.CharField(
         max_length=50, 
         default='chef',
@@ -40,6 +49,8 @@ class Mundo(models.Model):
         ordering = ['numero']
         verbose_name = 'Mundo'
         verbose_name_plural = 'Mundos'
+        # Unique por aluno + numero (permite mesmo numero para alunos diferentes)
+        unique_together = ['aluno', 'numero']
     
     def __str__(self):
         return f"Mundo {self.numero}: {self.nome}"
@@ -68,12 +79,16 @@ class Step(models.Model):
         choices=TipoValidacao.choices,
         default=TipoValidacao.FOTO
     )
+    config_formulario = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Perguntas do formulário: [{pergunta: str, obrigatoria: bool}]"
+    )
     pontos = models.IntegerField(default=10, help_text="Pontos ao completar este step")
     ativo = models.BooleanField(default=True)
     
     class Meta:
         ordering = ['mundo__numero', 'ordem']
-        unique_together = ['mundo', 'ordem']
         verbose_name = 'Step'
         verbose_name_plural = 'Steps'
     

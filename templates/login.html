@@ -1,13 +1,16 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{% static 'estilo.css' %}">
     <title>Login - Mindhub</title>
 </head>
+
 <body class="login-page">
     <div class="login-backdrop"></div>
 
@@ -21,12 +24,14 @@
             <label class="login-label">E-mail</label>
             <input type="email" class="input_login" id="email" placeholder="seu@email.com" autocomplete="email">
             <label class="login-label">Senha</label>
-            <input type="password" class="input_login" id="password" placeholder="sua senha" autocomplete="current-password">
+            <input type="password" class="input_login" id="password" placeholder="sua senha"
+                autocomplete="current-password">
             <button type="button" class="input_btn" id="login_btn">Entrar</button>
         </form>
     </div>
 
-    <audio id="login-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
+    <audio id="login-sound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+        preload="auto"></audio>
 
     <script>
         const botao = document.querySelector('#login_btn');
@@ -52,7 +57,12 @@
                     som.play();
                     document.body.classList.add('fade-out');
                     const role = dados.role || '';
-                    const url = (role === 'ADMIN' || role === 'MONITOR') ? '/monitor/' : '/ia';
+                    let url = '/mapa/'; // Default para ALUNO
+                    if (role === 'ADMIN' || role === 'MONITOR') {
+                        url = '/monitor/';
+                    } else if (role === 'COMERCIAL') {
+                        url = '/gerenciar-acessos/';
+                    }
                     setTimeout(() => { window.location.href = url; }, 1200);
                 } else {
                     alert(dados.mensagem || "Credenciais inválidas");
@@ -64,4 +74,5 @@
         });
     </script>
 </body>
+
 </html>

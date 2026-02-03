@@ -1,0 +1,194 @@
+{% extends 'trilha/base_monitor.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-white mb-2">{{ page_title }}</h1>
+        <p class="text-gray-400">Preencha os dados do usuário abaixo</p>
+    </div>
+
+    <!-- Mensagens -->
+    {% if messages %}
+        <div class="space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-900/30 border border-red-500 text-red-200{% elif message.tags == 'success' %}bg-green-900/30 border border-green-500 text-green-200{% else %}bg-blue-900/30 border border-blue-500 text-blue-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Formulário -->
+    <form method="POST" class="glass rounded-lg p-6 space-y-6">
+        {% csrf_token %}
+        
+        <!-- Nome -->
+        <div>
+            <label for="nome" class="block text-sm font-medium text-gray-300 mb-2">
+                Nome Completo <span class="text-mindhub-red">*</span>
+            </label>
+            <input type="text" 
+                   id="nome" 
+                   name="nome" 
+                   value="{% if usuario_edit %}{{ usuario_edit.nome }}{% elif form_data.nome %}{{ form_data.nome }}{% endif %}"
+                   required
+                   class="w-full px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-mindhub-red transition-smooth">
+        </div>
+
+        <!-- E-mail -->
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+                E-mail <span class="text-mindhub-red">*</span>
+            </label>
+            <input type="email" 
+                   id="email" 
+                   name="email" 
+                   value="{% if usuario_edit %}{{ usuario_edit.email }}{% elif form_data.email %}{{ form_data.email }}{% endif %}"
+                   required
+                   class="w-full px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-mindhub-red transition-smooth">
+        </div>
+
+        <!-- Role (só ADMIN pode escolher) -->
+        {% if usuario.is_admin %}
+        <div>
+            <label for="role" class="block text-sm font-medium text-gray-300 mb-2">
+                Perfil <span class="text-mindhub-red">*</span>
+            </label>
+            <select id="role" 
+                    name="role" 
+                    required
+                    class="w-full px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white focus:outline-none focus:border-mindhub-red transition-smooth"
+                    onchange="toggleMonitorField()">
+                <option value="ALUNO" {% if usuario_edit.role == 'ALUNO' or not usuario_edit %}selected{% endif %}>Aluno</option>
+                <option value="MONITOR" {% if usuario_edit.role == 'MONITOR' %}selected{% endif %}>Monitor</option>
+                <option value="COMERCIAL" {% if usuario_edit.role == 'COMERCIAL' %}selected{% endif %}>Comercial</option>
+                <option value="ADMIN" {% if usuario_edit.role == 'ADMIN' %}selected{% endif %}>Administrador</option>
+            </select>
+        </div>
+        {% else %}
+            <!-- Role travado para MONITOR e COMERCIAL -->
+            <input type="hidden" name="role" value="ALUNO">
+        {% endif %}
+
+        <!-- Monitor Responsável (só aparece se role = ALUNO) -->
+        <div id="monitor-field" style="display: {% if usuario.is_admin and usuario_edit and usuario_edit.role != 'ALUNO' %}none{% elif usuario.is_admin and not usuario_edit %}block{% elif usuario.is_admin and usuario_edit.role == 'ALUNO' %}block{% else %}block{% endif %};">
+            <label for="monitor_responsavel" class="block text-sm font-medium text-gray-300 mb-2">
+                Monitor Responsável 
+                {% if usuario.is_comercial %}
+                    <span class="text-mindhub-red">*</span>
+                {% endif %}
+            </label>
+            {% if usuario.is_monitor %}
+                <!-- MONITOR: campo oculto, preenchido automaticamente -->
+                <input type="hidden" name="monitor_responsavel" value="{{ usuario.id }}">
+                <div class="px-4 py-3 bg-mindhub-gray/20 border border-mindhub-gray/30 rounded-lg text-gray-400">
+                    <i class="fas fa-user-shield mr-2"></i>
+                    {{ usuario.nome|default:usuario.email }} (você)
+                </div>
+            {% else %}
+                <!-- ADMIN e COMERCIAL: dropdown -->
+                <select id="monitor_responsavel" 
+                        name="monitor_responsavel" 
+                        {% if usuario.is_comercial %}required{% endif %}
+                        class="w-full px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white focus:outline-none focus:border-mindhub-red transition-smooth">
+                    <option value="">Selecione um monitor...</option>
+                    {% for monitor in monitores %}
+                        <option value="{{ monitor.id }}" 
+                                {% if usuario_edit and usuario_edit.monitor_responsavel and usuario_edit.monitor_responsavel.id == monitor.id %}selected{% endif %}>
+                            {{ monitor.nome|default:monitor.email }}
+                        </option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+
+        <!-- Telefone -->
+        <div>
+            <label for="telefone" class="block text-sm font-medium text-gray-300 mb-2">
+                Telefone (WhatsApp)
+            </label>
+            <input type="text" 
+                   id="telefone" 
+                   name="telefone" 
+                   value="{% if usuario_edit %}{{ usuario_edit.telefone }}{% elif form_data.telefone %}{{ form_data.telefone }}{% endif %}"
+                   placeholder="(00) 00000-0000"
+                   class="w-full px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-mindhub-red transition-smooth">
+        </div>
+
+        <!-- Senha -->
+        <div>
+            <label for="senha" class="block text-sm font-medium text-gray-300 mb-2">
+                Senha {% if not usuario_edit %}<span class="text-mindhub-red">*</span>{% else %}<span class="text-gray-500 text-xs">(deixe em branco para manter a atual)</span>{% endif %}
+            </label>
+            <div class="flex gap-3">
+                <input type="password" 
+                       id="senha" 
+                       name="senha" 
+                       {% if not usuario_edit %}required{% endif %}
+                       class="flex-1 px-4 py-3 bg-mindhub-dark border border-mindhub-gray/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-mindhub-red transition-smooth"
+                       placeholder="{% if usuario_edit %}Nova senha (opcional){% else %}Digite a senha{% endif %}">
+                <button type="button" 
+                        onclick="gerarSenha()" 
+                        class="px-4 py-3 bg-mindhub-gray/30 text-gray-300 rounded-lg hover:bg-mindhub-gray/50 transition-smooth"
+                        title="Gerar senha aleatória">
+                    <i class="fas fa-key"></i>
+                </button>
+            </div>
+            {% if not usuario_edit %}
+            <div class="mt-2 flex items-center gap-2">
+                <input type="checkbox" 
+                       id="gerar_senha" 
+                       name="gerar_senha" 
+                       class="rounded border-mindhub-gray/30 bg-mindhub-dark text-mindhub-red focus:ring-mindhub-red">
+                <label for="gerar_senha" class="text-sm text-gray-400">Gerar senha automaticamente</label>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Botões -->
+        <div class="flex items-center justify-end gap-4 pt-4 border-t border-mindhub-gray/30">
+            <a href="{% url 'usuarios:gerenciar_acessos' %}" 
+               class="px-6 py-3 bg-mindhub-gray/30 text-gray-300 rounded-lg hover:bg-mindhub-gray/50 transition-smooth">
+                Cancelar
+            </a>
+            <button type="submit" 
+                    class="px-6 py-3 bg-mindhub-red text-white rounded-lg hover:bg-red-700 transition-smooth">
+                {% if usuario_edit %}Atualizar{% else %}Cadastrar{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleMonitorField() {
+        const roleSelect = document.getElementById('role');
+        const monitorField = document.getElementById('monitor-field');
+        if (roleSelect.value === 'ALUNO') {
+            monitorField.style.display = 'block';
+        } else {
+            monitorField.style.display = 'none';
+        }
+    }
+
+    function gerarSenha() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let senha = '';
+        for (let i = 0; i < 12; i++) {
+            senha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('senha').value = senha;
+        document.getElementById('gerar_senha').checked = false;
+    }
+
+    // Se o checkbox de gerar senha estiver marcado, limpa o campo
+    document.getElementById('gerar_senha')?.addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('senha').value = '';
+            document.getElementById('senha').removeAttribute('required');
+        } else {
+            document.getElementById('senha').setAttribute('required', 'required');
+        }
+    });
+</script>
+{% endblock %}

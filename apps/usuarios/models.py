@@ -10,6 +10,7 @@ class RoleChoices(models.TextChoices):
     ADMIN = 'ADMIN', 'Administrador'
     MONITOR = 'MONITOR', 'Monitor'
     ALUNO = 'ALUNO', 'Aluno'
+    COMERCIAL = 'COMERCIAL', 'Comercial'
 
 
 class Usuario(models.Model):
@@ -32,6 +33,15 @@ class Usuario(models.Model):
         help_text="Foto de perfil do usuário"
     )
     telefone = models.CharField(max_length=20, blank=True, help_text="WhatsApp para alertas")
+    monitor_responsavel = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='alunos_responsaveis',
+        limit_choices_to={'role': RoleChoices.MONITOR},
+        help_text="Monitor responsável pelo aluno (apenas para alunos)"
+    )
     data_cadastro = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
     
@@ -71,9 +81,18 @@ class Usuario(models.Model):
         return self.role == RoleChoices.ALUNO
     
     @property
+    def is_comercial(self):
+        return self.role == RoleChoices.COMERCIAL
+    
+    @property
     def pode_validar(self):
         """Verifica se o usuário pode validar submissões."""
         return self.role in [RoleChoices.ADMIN, RoleChoices.MONITOR]
+    
+    @property
+    def pode_gerenciar_acessos(self):
+        """Verifica se o usuário pode gerenciar acessos."""
+        return self.role in [RoleChoices.ADMIN, RoleChoices.MONITOR, RoleChoices.COMERCIAL]
     
     def get_nota_saude_atual(self):
         """Retorna a nota de saúde mais recente."""

@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Mindhub OS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #121212;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            border-bottom: 1px solid #333;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-info h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-info span {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #e30613;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #c00510;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+            color: #1e1e1e;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-top: 40px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #888;
+            margin-bottom: 24px;
+        }
+
+        .empty-state .btn {
+            display: inline-flex;
+        }
+
+        /* Accordion (Mundos) */
+        .mundo-accordion {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .mundo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .mundo-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mundo-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mundo-numero {
+            background: #e30613;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .mundo-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .mundo-subtitle {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .mundo-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .icon-btn.danger:hover {
+            background: rgba(227, 6, 19, 0.2);
+            color: #e30613;
+        }
+
+        .chevron {
+            transition: transform 0.2s;
+        }
+
+        .mundo-accordion.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        /* Steps List */
+        .mundo-content {
+            display: none;
+            padding: 0 20px 20px;
+            border-top: 1px solid #333;
+        }
+
+        .mundo-accordion.open .mundo-content {
+            display: block;
+        }
+
+        .steps-list {
+            list-style: none;
+        }
+
+        .step-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            transition: all 0.15s;
+        }
+
+        .step-item:active {
+            cursor: grabbing;
+        }
+
+        .step-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: #444;
+        }
+
+        .step-item.sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .step-item.sortable-chosen {
+            background: rgba(227, 6, 19, 0.1);
+            border-color: #e30613;
+        }
+
+        .step-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .step-ordem {
+            color: #888;
+            font-size: 12px;
+            width: 24px;
+        }
+
+        .step-drag {
+            color: #555;
+            cursor: grab;
+        }
+
+        .step-info h4 {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .step-info span {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .step-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .step-badge.foto {
+            background: rgba(0, 150, 255, 0.2);
+            color: #0096ff;
+        }
+
+        .step-badge.texto {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+        }
+
+        .step-badge.formulario {
+            background: rgba(100, 200, 100, 0.2);
+            color: #64c864;
+        }
+
+        .add-step-btn {
+            width: 100%;
+            background: transparent;
+            border: 2px dashed #333;
+            border-radius: 8px;
+            padding: 14px;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .add-step-btn:hover {
+            border-color: #e30613;
+            color: #e30613;
+            background: rgba(227, 6, 19, 0.05);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1e1e1e;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+            transition: border 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #e30613;
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Formulário Dinâmico */
+        .perguntas-container {
+            display: none;
+        }
+
+        .perguntas-container.active {
+            display: block;
+        }
+
+        .pergunta-item {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .pergunta-item input {
+            flex: 1;
+        }
+
+        .pergunta-item .icon-btn {
+            flex-shrink: 0;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* SimpleMDE Overrides */
+        .CodeMirror {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #fff !important;
+            border: 1px solid #333 !important;
+            border-radius: 8px !important;
+        }
+
+        .editor-toolbar {
+            border: none !important;
+            background: transparent !important;
+        }
+
+        .editor-toolbar a {
+            color: #888 !important;
+        }
+
+        .editor-toolbar a:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #2d2d2d;
+            border-left: 4px solid #4caf50;
+            padding: 14px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.active {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-color: #e30613;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <a href="/trilha/monitor/graph/" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="header-info">
+                <h1>{{ page_title }}</h1>
+                <span>{{ aluno.email }}</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="criarTrilhaVazia()">
+                <i class="fas fa-plus"></i> Criar Vazia
+            </button>
+            <button class="btn btn-gold" onclick="clonarTrilhaBase()">
+                <i class="fas fa-clone"></i> Clonar Trilha Base
+            </button>
+            <button class="btn btn-primary" onclick="novoMundo()">
+                <i class="fas fa-plus"></i> Novo Mundo
+            </button>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <div class="container">
+        <div id="mundos-container">
+            <!-- Loading -->
+            <div class="empty-state" id="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h3>Carregando...</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Mundo -->
+    <div class="modal-overlay" id="modal-mundo">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-mundo-title">Editar Mundo</h2>
+                <button class="modal-close" onclick="fecharModal('modal-mundo')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mundo-id">
+                <div class="form-group">
+                    <label>Nome do Mundo</label>
+                    <input type="text" class="form-input" id="mundo-nome" placeholder="Ex: Mês 1 - Fundamentos">
+                </div>
+                <div class="form-group">
+                    <label>Objetivo</label>
+                    <textarea class="form-input" id="mundo-objetivo"
+                        placeholder="Descreva o objetivo deste mundo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modal-mundo')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarMundo()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Step -->
+    <div class="modal-overlay" id="modal-step">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-step-title">Editar Step</h2>
+                <button class="modal-close" onclick="fecharModal('modal-step')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="step-id">
+                <input type="hidden" id="step-mundo-id">
+
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" class="form-input" id="step-titulo" placeholder="Ex: Organização da Cozinha">
+                </div>
+
+                <div class="form-group">
+                    <label>Instruções (Markdown)</label>
+                    <textarea class="form-input" id="step-instrucoes"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Validação</label>
+                        <select class="form-select" id="step-tipo" onchange="togglePerguntas()">
+                            <option value="FOTO">📷 Imagem/Print</option>
+                            <option value="TEXTO">📝 Texto</option>
+                            <option value="FORMULARIO">📋 Formulário</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pontos (XP)</label>
+                        <input type="number" class="form-input" id="step-pontos" value="10" min="1">
+                    </div>
+                </div>
+
+                <div class="form-group perguntas-container" id="perguntas-container">
+                    <label>Perguntas do Formulário</label>
+                    <div id="perguntas-list"></div>
+                    <button type="button" class="add-step-btn" onclick="adicionarPergunta()">
+                        <i class="fas fa-plus"></i> Adicionar Pergunta
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('modal-step')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarStep()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-msg">Salvo com sucesso!</span>
+    </div>
+
+    <script>
+        const ALUNO_ID = {{ aluno.id }};
+        let mundosData = [];
+        let simplemde = null;
+
+        // ===== INIT =====
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarTrilha();
+        });
+
+        // ===== API =====
+        async function carregarTrilha() {
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/`);
+                const data = await res.json();
+                mundosData = data.mundos || [];
+                renderMundos();
+            } catch (e) {
+                console.error(e);
+                showToast('Erro ao carregar trilha', true);
+            }
+        }
+
+        function renderMundos() {
+            const container = document.getElementById('mundos-container');
+
+            if (mundosData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-route"></i>
+                        <h3>Trilha vazia</h3>
+                        <p>Este aluno ainda não possui uma trilha configurada.</p>
+                        <button class="btn btn-gold" onclick="clonarTrilhaBase()">
+                            <i class="fas fa-clone"></i> Clonar Trilha Base
+                        </button>
+                        <button class="btn btn-primary" onclick="criarTrilhaVazia()" style="margin-left:12px;">
+                            <i class="fas fa-plus"></i> Criar 6 Mundos Vazios
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            mundosData.forEach(mundo => {
+                html += `
+                    <div class="mundo-accordion" data-mundo-id="${mundo.id}">
+                        <div class="mundo-header" onclick="toggleMundo(${mundo.id})">
+                            <div class="mundo-header-left">
+                                <div class="mundo-numero">${mundo.numero}</div>
+                                <div>
+                                    <div class="mundo-title">${mundo.nome}</div>
+                                    <div class="mundo-subtitle">${mundo.steps.length} steps</div>
+                                </div>
+                            </div>
+                            <div class="mundo-header-right">
+                                <button class="icon-btn" onclick="event.stopPropagation(); editarMundo(${mundo.id})">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="icon-btn danger" onclick="event.stopPropagation(); deletarMundo(${mundo.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <i class="fas fa-chevron-down chevron"></i>
+                            </div>
+                        </div>
+                        <div class="mundo-content">
+                            <ul class="steps-list" data-mundo-id="${mundo.id}">
+                                ${mundo.steps.map(step => renderStep(step)).join('')}
+                            </ul>
+                            <button class="add-step-btn" onclick="novoStep(${mundo.id})">
+                                <i class="fas fa-plus"></i> Adicionar Step
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Init SortableJS for each steps list
+            document.querySelectorAll('.steps-list').forEach(list => {
+                new Sortable(list, {
+                    animation: 150,
+                    handle: '.step-drag',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    onEnd: (evt) => {
+                        const mundoId = list.dataset.mundoId;
+                        const stepIds = Array.from(list.querySelectorAll('.step-item')).map(el => el.dataset.stepId);
+                        salvarOrdem(mundoId, stepIds);
+                    }
+                });
+            });
+        }
+
+        function renderStep(step) {
+            const tipoClass = step.tipo_validacao.toLowerCase();
+            const tipoLabel = {
+                'FOTO': '📷 Imagem',
+                'TEXTO': '📝 Texto',
+                'FORMULARIO': '📋 Form'
+            }[step.tipo_validacao] || step.tipo_validacao;
+
+            return `
+                <li class="step-item" data-step-id="${step.id}">
+                    <div class="step-left">
+                        <span class="step-drag"><i class="fas fa-grip-vertical"></i></span>
+                        <span class="step-ordem">${step.ordem}.</span>
+                        <div class="step-info">
+                            <h4>${step.titulo}</h4>
+                            <span>${step.pontos} XP</span>
+                        </div>
+                    </div>
+                    <div class="step-right">
+                        <span class="step-badge ${tipoClass}">${tipoLabel}</span>
+                        <button class="icon-btn" onclick="editarStep(${step.id})">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="icon-btn danger" onclick="deletarStep(${step.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </li>
+            `;
+        }
+
+        // ===== ACORDION =====
+        function toggleMundo(mundoId) {
+            const accordion = document.querySelector(`.mundo-accordion[data-mundo-id="${mundoId}"]`);
+            accordion.classList.toggle('open');
+        }
+
+        // ===== MUNDO CRUD =====
+        function novoMundo() {
+            document.getElementById('mundo-id').value = '';
+            document.getElementById('mundo-nome').value = '';
+            document.getElementById('mundo-objetivo').value = '';
+            document.getElementById('modal-mundo-title').textContent = 'Novo Mundo';
+            abrirModal('modal-mundo');
+        }
+
+        function editarMundo(mundoId) {
+            const mundo = mundosData.find(m => m.id === mundoId);
+            if (!mundo) return;
+
+            document.getElementById('mundo-id').value = mundo.id;
+            document.getElementById('mundo-nome').value = mundo.nome;
+            document.getElementById('mundo-objetivo').value = mundo.objetivo || '';
+            document.getElementById('modal-mundo-title').textContent = 'Editar Mundo';
+            abrirModal('modal-mundo');
+        }
+
+        async function salvarMundo() {
+            const data = {
+                id: document.getElementById('mundo-id').value || null,
+                nome: document.getElementById('mundo-nome').value,
+                objetivo: document.getElementById('mundo-objetivo').value
+            };
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/mundo/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    fecharModal('modal-mundo');
+                    carregarTrilha();
+                    showToast('Mundo salvo!');
+                } else {
+                    const err = await res.json();
+                    showToast(err.error || 'Erro ao salvar', true);
+                }
+            } catch (e) {
+                showToast('Erro de conexão', true);
+            }
+        }
+
+        async function deletarMundo(mundoId) {
+            if (!confirm('Tem certeza que deseja excluir este mundo e todos os seus steps?')) return;
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/mundo/${mundoId}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+
+                if (res.ok) {
+                    carregarTrilha();
+                    showToast('Mundo removido!');
+                } else {
+                    showToast('Erro ao remover', true);
+                }
+            } catch (e) {
+                showToast('Erro de conexão', true);
+            }
+        }
+
+        // ===== STEP CRUD =====
+        function novoStep(mundoId) {
+            document.getElementById('step-id').value = '';
+            document.getElementById('step-mundo-id').value = mundoId;
+            document.getElementById('step-titulo').value = '';
+            document.getElementById('step-instrucoes').value = '';
+            document.getElementById('step-tipo').value = 'FOTO';
+            document.getElementById('step-pontos').value = '10';
+            document.getElementById('perguntas-list').innerHTML = '';
+            document.getElementById('perguntas-container').classList.remove('active');
+            document.getElementById('modal-step-title').textContent = 'Novo Step';
+            abrirModal('modal-step');
+        }
+
+        function editarStep(stepId) {
+            let step = null;
+            for (const mundo of mundosData) {
+                step = mundo.steps.find(s => s.id === stepId);
+                if (step) {
+                    document.getElementById('step-mundo-id').value = mundo.id;
+                    break;
+                }
+            }
+            if (!step) return;
+
+            document.getElementById('step-id').value = step.id;
+            document.getElementById('step-titulo').value = step.titulo;
+            document.getElementById('step-instrucoes').value = step.instrucoes || '';
+            document.getElementById('step-tipo').value = step.tipo_validacao;
+            document.getElementById('step-pontos').value = step.pontos;
+
+            // Perguntas
+            const container = document.getElementById('perguntas-container');
+            const list = document.getElementById('perguntas-list');
+            list.innerHTML = '';
+
+            if (step.tipo_validacao === 'FORMULARIO' && step.config_formulario) {
+                container.classList.add('active');
+                step.config_formulario.forEach(p => {
+                    adicionarPergunta(p.pergunta);
+                });
+            } else {
+                container.classList.remove('active');
+            }
+
+            document.getElementById('modal-step-title').textContent = 'Editar Step';
+            abrirModal('modal-step');
+        }
+
+        async function salvarStep() {
+            const tipo = document.getElementById('step-tipo').value;
+            let config_formulario = null;
+
+            if (tipo === 'FORMULARIO') {
+                config_formulario = [];
+                document.querySelectorAll('#perguntas-list input').forEach(input => {
+                    if (input.value.trim()) {
+                        config_formulario.push({ pergunta: input.value.trim(), obrigatoria: true });
+                    }
+                });
+            }
+
+            const data = {
+                id: document.getElementById('step-id').value || null,
+                mundo_id: document.getElementById('step-mundo-id').value,
+                titulo: document.getElementById('step-titulo').value,
+                instrucoes: document.getElementById('step-instrucoes').value,
+                tipo_validacao: tipo,
+                pontos: parseInt(document.getElementById('step-pontos').value) || 10,
+                config_formulario: config_formulario
+            };
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/step/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    fecharModal('modal-step');
+                    carregarTrilha();
+                    showToast('Step salvo!');
+                } else {
+                    const err = await res.json();
+                    showToast(err.error || 'Erro ao salvar', true);
+                }
+            } catch (e) {
+                showToast('Erro de conexão', true);
+            }
+        }
+
+        async function deletarStep(stepId) {
+            if (!confirm('Tem certeza que deseja excluir este step?')) return;
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/step/${stepId}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+
+                if (res.ok) {
+                    carregarTrilha();
+                    showToast('Step removido!');
+                } else {
+                    showToast('Erro ao remover', true);
+                }
+            } catch (e) {
+                showToast('Erro de conexão', true);
+            }
+        }
+
+        async function salvarOrdem(mundoId, stepIds) {
+            try {
+                await fetch(`/trilha/api/trilha/${ALUNO_ID}/reordenar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ mundo_id: mundoId, step_ids: stepIds.map(Number) })
+                });
+                showToast('Ordem salva!');
+            } catch (e) {
+                showToast('Erro ao reordenar', true);
+            }
+        }
+
+        // ===== TRILHA BASE =====
+        async function clonarTrilhaBase() {
+            if (!confirm('Clonar a Trilha Base para este aluno?')) return;
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/clonar/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    carregarTrilha();
+                    showToast(data.message);
+                } else {
+                    showToast(data.error, true);
+                }
+            } catch (e) {
+                showToast('Erro ao clonar', true);
+            }
+        }
+
+        async function criarTrilhaVazia() {
+            if (!confirm('Criar 6 mundos vazios para este aluno?')) return;
+
+            try {
+                const res = await fetch(`/trilha/api/trilha/${ALUNO_ID}/criar-vazia/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    carregarTrilha();
+                    showToast(data.message);
+                } else {
+                    showToast(data.error, true);
+                }
+            } catch (e) {
+                showToast('Erro ao criar', true);
+            }
+        }
+
+        // ===== PERGUNTAS FORMULÁRIO =====
+        function togglePerguntas() {
+            const tipo = document.getElementById('step-tipo').value;
+            const container = document.getElementById('perguntas-container');
+            container.classList.toggle('active', tipo === 'FORMULARIO');
+        }
+
+        function adicionarPergunta(valor = '') {
+            const list = document.getElementById('perguntas-list');
+            const div = document.createElement('div');
+            div.className = 'pergunta-item';
+            div.innerHTML = `
+                <input type="text" class="form-input" placeholder="Pergunta..." value="${valor}">
+                <button type="button" class="icon-btn danger" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            list.appendChild(div);
+        }
+
+        // ===== MODAL =====
+        function abrirModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        function fecharModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Close on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
+
+        // ===== TOAST =====
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = msg;
+            toast.classList.toggle('error', isError);
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 3000);
+        }
+
+        // ===== UTILS =====
+        function getCookie(name) {
+            let value = null;
+            document.cookie.split(';').forEach(c => {
+                c = c.trim();
+                if (c.startsWith(name + '=')) {
+                    value = decodeURIComponent(c.substring(name.length + 1));
+                }
+            });
+            return value;
+        }
+    </script>
+</body>
+
+</html>

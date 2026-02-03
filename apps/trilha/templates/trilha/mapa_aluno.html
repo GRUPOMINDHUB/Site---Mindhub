@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Mindhub OS</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            min-height: 100vh;
+            background: #5c94fc;
+            overflow-x: hidden;
+        }
+
+        /* ===== PIXEL ART OCEAN BG ===== */
+        .ocean {
+            position: fixed;
+            inset: 0;
+            background:
+                repeating-linear-gradient(90deg, #4a88e8 0px, #4a88e8 8px, #5c94fc 8px, #5c94fc 16px),
+                linear-gradient(180deg, #87CEEB 0%, #5c94fc 40%, #4a88e8 100%);
+            z-index: -2;
+        }
+
+        .waves {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 4px, rgba(255, 255, 255, 0.05) 4px, rgba(255, 255, 255, 0.05) 8px);
+            animation: waveMove 4s steps(4) infinite;
+        }
+
+        @keyframes waveMove {
+            0% {
+                background-position-y: 0;
+            }
+
+            100% {
+                background-position-y: 32px;
+            }
+        }
+
+        /* ===== HUD PIXEL STYLE ===== */
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, #228b22 0%, #1a6b1a 100%);
+            border-bottom: 4px solid #145214;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 0 #0a3a0a;
+        }
+
+        .hud-left,
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: #fff;
+            font-size: 10px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        /* ===== MAP SCROLL ===== */
+        .map-scroll {
+            padding: 80px 20px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            align-items: center;
+        }
+
+        /* ===== ISLAND PIXEL ART ===== */
+        .island {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 300px;
+            background: repeating-linear-gradient(90deg, #7ec850 0px, #7ec850 8px, #6ab840 8px, #6ab840 16px);
+            border-radius: 8px;
+            padding: 30px 20px;
+            box-shadow: 0 8px 0 #4a9838, 0 16px 0 #3a7828, 0 20px 0 rgba(0, 0, 0, 0.3);
+            border: 4px solid #3a7828;
+        }
+
+        .island::before {
+            content: '';
+            position: absolute;
+            top: -16px;
+            left: 16px;
+            right: 16px;
+            height: 20px;
+            background: repeating-linear-gradient(90deg,
+                    transparent 0px, transparent 16px,
+                    #8be88b 16px, #8be88b 24px,
+                    transparent 24px, transparent 40px,
+                    #9cf89c 40px, #9cf89c 48px);
+            clip-path: polygon(0% 100%, 4% 50%, 8% 100%, 12% 40%, 16% 100%,
+                    20% 50%, 24% 100%, 28% 30%, 32% 100%,
+                    36% 50%, 40% 100%, 44% 45%, 48% 100%,
+                    52% 55%, 56% 100%, 60% 35%, 64% 100%,
+                    68% 50%, 72% 100%, 76% 40%, 80% 100%,
+                    84% 55%, 88% 100%, 92% 45%, 96% 100%, 100% 100%);
+        }
+
+        .island::after {
+            content: '';
+            position: absolute;
+            bottom: -16px;
+            left: 8px;
+            right: 8px;
+            height: 20px;
+            background: repeating-linear-gradient(90deg, #8b5a2b 0px, #8b5a2b 8px, #7a4a1b 8px, #7a4a1b 16px);
+            border-radius: 0 0 8px 8px;
+            border: 2px solid #5a3a1b;
+            border-top: none;
+        }
+
+        .mundo-header {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .mundo-header h2 {
+            font-size: 12px;
+            text-shadow: 2px 0 0 #1a5a14, -2px 0 0 #1a5a14, 0 2px 0 #1a5a14, 0 -2px 0 #1a5a14, 2px 2px 0 #1a5a14;
+            letter-spacing: 2px;
+        }
+
+        .mundo-header span {
+            font-size: 8px;
+            color: #ffd700;
+            text-shadow: 1px 1px 0 #8b6914;
+        }
+
+        /* ===== SVG PATH ===== */
+        .path-svg {
+            width: 100%;
+            height: 220px;
+            overflow: visible;
+        }
+
+        .path-line {
+            fill: none;
+            stroke: #c9a45c;
+            stroke-width: 20;
+            stroke-linecap: square;
+        }
+
+        .path-line-border {
+            fill: none;
+            stroke: #8b6914;
+            stroke-width: 24;
+            stroke-linecap: square;
+        }
+
+        .path-line-dots {
+            fill: none;
+            stroke: #f4d59e;
+            stroke-width: 4;
+            stroke-dasharray: 8 12;
+            stroke-linecap: square;
+        }
+
+        /* ===== STEP NODE PIXEL ===== */
+        .step-node {
+            cursor: pointer;
+            transition: transform 0.1s steps(2);
+        }
+
+        .step-node:hover {
+            transform: scale(1.15);
+        }
+
+        .step-node.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .step-node.locked:hover {
+            transform: none;
+        }
+
+        .step-pulse {
+            animation: pixelPulse 0.5s steps(2) infinite;
+        }
+
+        @keyframes pixelPulse {
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.3) drop-shadow(0 0 4px #ffd700);
+            }
+        }
+
+        /* ===== CASTLE IMAGE ===== */
+        .castle-image {
+            cursor: default;
+        }
+
+        /* ===== DRAWER ===== */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s steps(4);
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .drawer {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(180deg, #6ab840 0%, #4a9828 100%);
+            border-left: 4px solid #2a6818;
+            z-index: 2001;
+            transform: translateX(100%);
+            transition: transform 0.2s steps(4);
+            overflow-y: auto;
+        }
+
+        .drawer.active {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            background: linear-gradient(180deg, #cc0000 0%, #990000 100%);
+            padding: 16px;
+            border-bottom: 4px solid #660000;
+        }
+
+        .drawer-title {
+            color: #fff;
+            font-size: 11px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .drawer-close {
+            position: absolute;
+            right: 16px;
+            top: 14px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .drawer-body {
+            padding: 20px;
+        }
+
+        .info-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 4px solid #fff;
+            padding: 14px;
+            margin-bottom: 14px;
+            color: #fff;
+        }
+
+        .info-card h3 {
+            font-size: 8px;
+            color: #ffd700;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .info-card p {
+            font-size: 11px;
+            line-height: 1.7;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .btn-send {
+            width: 100%;
+            background: linear-gradient(180deg, #ffd700 0%, #daa520 100%);
+            border: 4px solid #fff;
+            padding: 14px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #8b6914;
+            text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-send:hover {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #8b6914;
+        }
+
+        .form-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 4px solid #fff;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 12px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* ===== IA BTN ===== */
+        .ia-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(180deg, #cc0000 0%, #990000 100%);
+            border: 4px solid #fff;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1500;
+            box-shadow: 0 4px 0 #660000;
+        }
+
+        /* ===== PIXEL CLOUDS ===== */
+        .pixel-cloud {
+            position: fixed;
+            z-index: -1;
+            animation: cloudFloat 20s linear infinite;
+        }
+
+        @keyframes cloudFloat {
+            0% {
+                transform: translateX(-100px);
+            }
+
+            100% {
+                transform: translateX(calc(100vw + 100px));
+            }
+        }
+
+        /* ===== DECORATIONS ===== */
+        .pixel-tree {
+            position: absolute;
+            z-index: 5;
+        }
+
+        .pixel-bush {
+            position: absolute;
+            z-index: 4;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Pixel Clouds -->
+    <div class="pixel-cloud" style="top:60px;animation-delay:0s;">
+        <svg width="80" height="40" viewBox="0 0 80 40">
+            <rect x="16" y="20" width="48" height="16" fill="#fff" />
+            <rect x="24" y="12" width="32" height="8" fill="#fff" />
+            <rect x="8" y="24" width="8" height="8" fill="#fff" />
+            <rect x="64" y="24" width="8" height="8" fill="#fff" />
+        </svg>
+    </div>
+    <div class="pixel-cloud" style="top:120px;animation-delay:-7s;">
+        <svg width="60" height="32" viewBox="0 0 60 32">
+            <rect x="12" y="16" width="36" height="12" fill="#fff" />
+            <rect x="18" y="8" width="24" height="8" fill="#fff" />
+            <rect x="6" y="20" width="6" height="6" fill="#fff" />
+            <rect x="48" y="20" width="6" height="6" fill="#fff" />
+        </svg>
+    </div>
+
+    <div class="ocean"></div>
+    <div class="waves"></div>
+
+    <header class="hud">
+        <div class="hud-left">
+            <span>👨‍🍳</span>
+            <span>CHEF MASTER</span>
+        </div>
+        <div class="hud-right">
+            <span>⭐ <span id="xp">×00</span></span>
+            <span>🍴 <span id="progress">0/0</span></span>
+            <a href="/logout" style="color:#fff;text-decoration:none;">SAIR</a>
+        </div>
+    </header>
+
+    <div class="map-scroll" id="map"></div>
+
+    <div class="drawer-overlay" id="overlay"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span class="drawer-title" id="drawer-title">ETAPA</span>
+            <button class="drawer-close" onclick="closeDrawer()">×</button>
+        </div>
+        <div class="drawer-body" id="drawer-body"></div>
+    </aside>
+
+    <button class="ia-btn" onclick="alert('Brain Assistant em breve!')">🧠</button>
+
+    <script>
+        let avatarNode = null;
+
+        // ===== SVG DEFINITIONS =====
+        function getPixelDefs() {
+            return `
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffd700"/>
+                    <stop offset="100%" style="stop-color:#daa520"/>
+                </linearGradient>
+                <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ff4444"/>
+                    <stop offset="100%" style="stop-color:#cc0000"/>
+                </linearGradient>
+                <linearGradient id="yellowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#ffcc00"/>
+                    <stop offset="100%" style="stop-color:#e6b800"/>
+                </linearGradient>
+            `;
+        }
+
+        // ===== CASTLE GOURMET (IMAGEM REAL) =====
+        function renderCasteloGourmet(completed) {
+            return `
+                <g class="castle-image">
+                    <image 
+                        href="/static/images/castelo_gourmet.png" 
+                        x="-140" 
+                        y="-110" 
+                        width="280" 
+                        height="200"
+                        preserveAspectRatio="xMidYMid meet"
+                        style="${completed ? 'filter: drop-shadow(0 0 15px gold);' : ''}"
+                    />
+                    ${completed ? '<text x="0" y="-100" text-anchor="middle" font-size="24">👑</text>' : ''}
+                </g>
+            `;
+        }
+
+        // ===== PIXEL STEP ICONS =====
+        function renderPixelStep(g, step) {
+            if (step.status === 'BLOQUEADO') {
+                g.innerHTML = `
+                    <rect x="-20" y="-20" width="40" height="40" rx="4" fill="#555" stroke="#333" stroke-width="4"/>
+                    <text text-anchor="middle" dominant-baseline="central" font-size="20">🔒</text>
+                `;
+            } else if (step.status === 'EM_ANDAMENTO') {
+                g.classList.add('step-pulse');
+                g.innerHTML = `
+                    <circle r="28" fill="none" stroke="#ffd700" stroke-width="3">
+                        <animate attributeName="r" values="28;35;28" dur="1s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle r="24" fill="url(#goldGrad)" stroke="#fff" stroke-width="4"/>
+                    <circle r="18" fill="#daa520" opacity="0.5"/>
+                    <text text-anchor="middle" dominant-baseline="central" font-size="20">🍳</text>
+                `;
+            } else if (step.status === 'CONCLUIDO') {
+                g.innerHTML = `
+                    <circle r="24" fill="url(#goldGrad)" stroke="#fff" stroke-width="4"/>
+                    <text text-anchor="middle" dominant-baseline="central" font-size="24" fill="#fff" style="text-shadow:1px 1px 0 #8b6914;">★</text>
+                    <circle cx="18" cy="-18" r="3" fill="#fff">
+                        <animate attributeName="opacity" values="1;0;1" dur="0.5s" repeatCount="indefinite"/>
+                    </circle>
+                `;
+            } else if (step.status === 'PENDENTE_VALIDACAO') {
+                g.innerHTML = `
+                    <circle r="24" fill="url(#yellowGrad)" stroke="#fff" stroke-width="4"/>
+                    <text text-anchor="middle" dominant-baseline="central" font-size="20">⏳</text>
+                `;
+            }
+        }
+
+        // ===== ADD PIXEL DECORATIONS =====
+        function addPixelDecorations(island) {
+            const treePositions = [
+                { left: '8px', top: '50px' },
+                { right: '8px', top: '40px' }
+            ];
+
+            treePositions.forEach(pos => {
+                const tree = document.createElement('div');
+                tree.className = 'pixel-tree';
+                tree.style.cssText = Object.entries(pos).map(([k, v]) => k + ':' + v).join(';');
+                tree.innerHTML = `
+                    <svg width="40" height="50" viewBox="0 0 40 50">
+                        <rect x="16" y="30" width="8" height="20" fill="#8b5a2b"/>
+                        <rect x="8" y="20" width="24" height="12" fill="#228b22"/>
+                        <rect x="4" y="24" width="8" height="8" fill="#228b22"/>
+                        <rect x="28" y="24" width="8" height="8" fill="#228b22"/>
+                        <rect x="12" y="10" width="16" height="12" fill="#2d9d2d"/>
+                        <rect x="16" y="4" width="8" height="8" fill="#33aa33"/>
+                    </svg>
+                `;
+                island.appendChild(tree);
+            });
+
+            const bushPositions = [
+                { left: '15%', bottom: '30px' },
+                { right: '18%', bottom: '35px' }
+            ];
+
+            bushPositions.forEach(pos => {
+                const bush = document.createElement('div');
+                bush.className = 'pixel-bush';
+                bush.style.cssText = Object.entries(pos).map(([k, v]) => k + ':' + v).join(';');
+                bush.innerHTML = `
+                    <svg width="32" height="20" viewBox="0 0 32 20">
+                        <rect x="4" y="8" width="24" height="12" fill="#228b22"/>
+                        <rect x="0" y="12" width="8" height="8" fill="#228b22"/>
+                        <rect x="24" y="12" width="8" height="8" fill="#228b22"/>
+                        <rect x="8" y="4" width="16" height="8" fill="#2d9d2d"/>
+                    </svg>
+                `;
+                island.appendChild(bush);
+            });
+        }
+
+        function renderMap(mundos) {
+            const container = document.getElementById('map');
+            container.innerHTML = '';
+
+            mundos.forEach((mundo, mIdx) => {
+                const island = document.createElement('div');
+                island.className = 'island';
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'mundo-header';
+                header.innerHTML = `<h2>MUNDO ${mundo.numero}</h2><span>${mundo.nome || ''}</span>`;
+                island.appendChild(header);
+
+                // Create SVG
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'path-svg');
+                svg.setAttribute('viewBox', '0 0 900 220');
+                svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+                const stepCount = mundo.steps.length || 1;
+                const castleSpace = 200;
+                const availableWidth = 900 - castleSpace - 80;
+
+                // Generate serpentine path
+                let pathD = 'M 50,110';
+                const points = [];
+
+                for (let i = 0; i < stepCount; i++) {
+                    const x = 80 + (availableWidth / stepCount) * i;
+                    const y = i % 2 === 0 ? 60 : 160;
+
+                    if (i === 0) {
+                        pathD += ` Q ${x - 20},${y} ${x},${y}`;
+                    } else {
+                        const prevX = 80 + (availableWidth / stepCount) * (i - 1);
+                        const prevY = (i - 1) % 2 === 0 ? 60 : 160;
+                        const midX = (prevX + x) / 2;
+                        pathD += ` Q ${midX},${prevY} ${midX},110 Q ${midX},${y} ${x},${y}`;
+                    }
+
+                    points.push({ x, y });
+                }
+
+                // Connect to castle
+                const lastPoint = points[points.length - 1] || { x: 80, y: 110 };
+                pathD += ` Q ${lastPoint.x + 50},${lastPoint.y} ${lastPoint.x + 80},110 L 750,110`;
+
+                // Draw path layers
+                const pathBorder = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathBorder.setAttribute('d', pathD);
+                pathBorder.setAttribute('class', 'path-line-border');
+                svg.appendChild(pathBorder);
+
+                const pathMain = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathMain.setAttribute('d', pathD);
+                pathMain.setAttribute('class', 'path-line');
+                svg.appendChild(pathMain);
+
+                const pathDots = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathDots.setAttribute('d', pathD);
+                pathDots.setAttribute('class', 'path-line-dots');
+                svg.appendChild(pathDots);
+
+                // Draw step nodes
+                mundo.steps.forEach((step, sIdx) => {
+                    const pt = points[sIdx];
+                    if (!pt) return;
+
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', 'step-node' + (step.status === 'BLOQUEADO' ? ' locked' : ''));
+                    g.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+                    g.setAttribute('data-id', step.id);
+
+                    renderPixelStep(g, step);
+
+                    // Track avatar position
+                    if (step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO') {
+                        avatarNode = { x: pt.x, y: pt.y, svgId: 'svg-' + mIdx };
+                    }
+
+                    // Label
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('y', '42');
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('fill', '#fff');
+                    label.setAttribute('font-size', '10');
+                    label.setAttribute('font-family', 'Press Start 2P');
+                    label.style.textShadow = '2px 2px 0 #000';
+                    label.textContent = step.ordem;
+                    g.appendChild(label);
+
+                    // Click
+                    if (step.status !== 'BLOQUEADO') {
+                        g.style.cursor = 'pointer';
+                        g.addEventListener('click', () => openDrawer(step.id));
+                    }
+
+                    svg.appendChild(g);
+                });
+
+                // Castle (IMAGEM REAL)
+                const lastStep = mundo.steps[mundo.steps.length - 1];
+                const castleCompleted = lastStep && lastStep.status === 'CONCLUIDO';
+
+                const castle = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                castle.setAttribute('class', 'castle-group' + (castleCompleted ? ' completed' : ''));
+                castle.setAttribute('transform', 'translate(800, 110)');
+                castle.innerHTML = renderCasteloGourmet(castleCompleted);
+                svg.appendChild(castle);
+
+                // Add defs
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                defs.innerHTML = getPixelDefs();
+                svg.appendChild(defs);
+
+                // Avatar
+                if (mIdx === 0 || (avatarNode && avatarNode.svgId === 'svg-' + mIdx)) {
+                    const avatar = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    avatar.setAttribute('class', 'avatar');
+                    avatar.setAttribute('id', 'avatar');
+
+                    avatar.innerHTML = `
+                        <g>
+                            <!-- Pixel Chef Avatar -->
+                            <rect x="-10" y="-75" width="20" height="8" fill="#fff"/>
+                            <rect x="-12" y="-67" width="24" height="4" fill="#fff"/>
+                            <rect x="-8" y="-81" width="16" height="8" fill="#fff"/>
+                            <rect x="-8" y="-63" width="16" height="16" fill="#ffd5c8"/>
+                            <rect x="-6" y="-58" width="4" height="4" fill="#333"/>
+                            <rect x="2" y="-58" width="4" height="4" fill="#333"/>
+                            <rect x="-10" y="-47" width="20" height="20" fill="#fff"/>
+                            <rect x="-2" y="-44" width="4" height="4" fill="#333"/>
+                            <rect x="-8" y="-27" width="6" height="8" fill="#333"/>
+                            <rect x="2" y="-27" width="6" height="8" fill="#333"/>
+                        </g>
+                    `;
+
+                    svg.appendChild(avatar);
+                }
+
+                svg.id = 'svg-' + mIdx;
+                island.appendChild(svg);
+
+                addPixelDecorations(island);
+                container.appendChild(island);
+
+                // Position avatar
+                if (avatarNode && avatarNode.svgId === 'svg-' + mIdx) {
+                    setTimeout(() => {
+                        const av = document.getElementById('avatar');
+                        if (av) {
+                            av.setAttribute('transform', `translate(${avatarNode.x}, ${avatarNode.y})`);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        async function loadProgress() {
+            try {
+                const res = await fetch('/trilha/api/aluno/progresso/');
+                const data = await res.json();
+
+                document.getElementById('xp').textContent = '×' + String(data.total_pontos || 0).padStart(2, '0');
+                document.getElementById('progress').textContent = `${data.steps_concluidos || 0}/${data.total_steps || 0}`;
+
+                if (data.mundos && data.mundos.length > 0) {
+                    renderMap(data.mundos);
+                } else {
+                    renderDemo();
+                }
+            } catch (e) {
+                console.error(e);
+                renderDemo();
+            }
+        }
+
+        function renderDemo() {
+            renderMap([{
+                numero: 1,
+                nome: 'CASTELO GOURMET',
+                steps: [
+                    { id: 1, ordem: 1, status: 'CONCLUIDO' },
+                    { id: 2, ordem: 2, status: 'CONCLUIDO' },
+                    { id: 3, ordem: 3, status: 'EM_ANDAMENTO' },
+                    { id: 4, ordem: 4, status: 'BLOQUEADO' },
+                    { id: 5, ordem: 5, status: 'BLOQUEADO' }
+                ]
+            }, {
+                numero: 2,
+                nome: 'FINANÇAS',
+                steps: [
+                    { id: 6, ordem: 1, status: 'BLOQUEADO' },
+                    { id: 7, ordem: 2, status: 'BLOQUEADO' },
+                    { id: 8, ordem: 3, status: 'BLOQUEADO' },
+                    { id: 9, ordem: 4, status: 'BLOQUEADO' }
+                ]
+            }]);
+        }
+
+        async function openDrawer(stepId) {
+            try {
+                const res = await fetch(`/trilha/api/aluno/step/${stepId}/`);
+                const data = await res.json();
+
+                document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
+
+                let html = `
+                    <div class="info-card">
+                        <h3>📋 MISSÃO</h3>
+                        <p>${data.instrucoes || 'Complete esta etapa!'}</p>
+                    </div>
+                    <div style="margin-bottom:14px;color:#ffd700;font-size:10px;">+${data.pontos} XP</div>
+                `;
+
+                if (data.feedback_anterior) {
+                    html += `<div class="info-card" style="border-color:#ff4444"><h3>⚠️ REFAZER</h3><p>${data.feedback_anterior}</p></div>`;
+                }
+
+                if (data.status === 'EM_ANDAMENTO') {
+                    const input = data.tipo_validacao === 'FOTO'
+                        ? `<input type="file" name="arquivo" accept="image/*" class="form-field" required>`
+                        : `<textarea name="resposta_texto" rows="4" class="form-field" placeholder="Sua resposta..." required></textarea>`;
+                    html += `<form id="form" onsubmit="submitStep(event,${data.id})"><input type="hidden" name="step_id" value="${data.id}">${input}<button type="submit" class="btn-send">🚀 ENVIAR</button></form>`;
+                } else if (data.status === 'PENDENTE_VALIDACAO') {
+                    html += `<div class="info-card"><h3>⏳ AGUARDANDO</h3><p>O chef está avaliando...</p></div>`;
+                } else if (data.status === 'CONCLUIDO') {
+                    html += `<div class="info-card"><h3>✅ APROVADO!</h3><p>+${data.pontos} XP conquistados!</p></div>`;
+                }
+
+                document.getElementById('drawer-body').innerHTML = html;
+                document.getElementById('drawer').classList.add('active');
+                document.getElementById('overlay').classList.add('active');
+            } catch (e) { console.error(e); }
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        document.getElementById('overlay').addEventListener('click', closeDrawer);
+
+        async function submitStep(e, id) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+
+            const btn = form.querySelector('button');
+            btn.textContent = '⏳...';
+            btn.disabled = true;
+
+            try {
+                const r = await fetch('/trilha/api/aluno/submeter/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: fd
+                });
+                if (r.ok) {
+                    alert('✓ Enviado!');
+                    closeDrawer();
+                    loadProgress();
+                } else {
+                    const d = await r.json();
+                    alert('✗ ' + (d.error || 'Erro'));
+                    btn.textContent = '🚀 ENVIAR';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('✗ Erro de conexão');
+                btn.textContent = '🚀 ENVIAR';
+                btn.disabled = false;
+            }
+        }
+
+        function getCookie(n) {
+            let v = null;
+            document.cookie.split(';').forEach(c => {
+                c = c.trim();
+                if (c.startsWith(n + '=')) v = decodeURIComponent(c.substring(n.length + 1));
+            });
+            return v;
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProgress);
+    </script>
+</body>
+
+</html>
