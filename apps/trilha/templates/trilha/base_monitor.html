@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ page_title|default:"Mindhub OS" }}{% endblock %}</title>
-    
+
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -26,60 +27,65 @@
             }
         }
     </script>
-    
+
     <!-- Google Fonts - Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #1a1a1a;
             color: #ffffff;
         }
-        
+
         /* Scrollbar personalizada */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #1a1a1a;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #3f3f3f;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #e30613;
         }
-        
+
         /* Glassmorphism */
         .glass {
             background: rgba(63, 63, 63, 0.3);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         /* Animações suaves */
         .transition-smooth {
             transition: all 0.3s ease;
         }
-        
+
         /* Drawer */
         .drawer {
             transform: translateX(100%);
             transition: transform 0.3s ease;
         }
+
         .drawer.open {
             transform: translateX(0);
         }
-        
+
         /* Tooltip */
         .tooltip {
             position: absolute;
@@ -93,13 +99,15 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+
         .tooltip.visible {
             opacity: 1;
         }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body class="min-h-screen bg-mindhub-dark">
     <!-- Sidebar -->
     <aside class="fixed left-0 top-0 h-full w-64 bg-mindhub-darker border-r border-mindhub-gray/30 z-40">
@@ -114,36 +122,42 @@
                     <p class="text-xs text-gray-400">Monitor Panel</p>
                 </div>
             </div>
-            
+
             <!-- Menu -->
             <nav class="space-y-2">
                 {% if usuario.is_admin or usuario.is_monitor %}
-                <a href="{% url 'trilha:monitor_dashboard' %}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_dashboard' %}bg-mindhub-red text-white{% endif %}">
+                <a href="{% url 'trilha:monitor_dashboard' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_dashboard' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-chart-pie w-5"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{% url 'trilha:monitor_graph' %}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_graph' %}bg-mindhub-red text-white{% endif %}">
+                <a href="{% url 'trilha:monitor_graph' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_graph' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-project-diagram w-5"></i>
                     <span>Graph View</span>
                 </a>
-                <a href="{% url 'trilha:monitor_validar' %}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_validar' %}bg-mindhub-red text-white{% endif %}">
+                <a href="{% url 'trilha:monitor_validar' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_validar' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-clipboard-check w-5"></i>
                     <span>Validar</span>
-                    <span id="badge-pendentes" class="ml-auto bg-mindhub-red text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                    <span id="badge-pendentes"
+                        class="ml-auto bg-mindhub-red text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
+                <a href="{% url 'trilha:monitor_lista_alunos' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-sitemap w-5"></i>
+                    <span>Gestão de Trilhas</span>
                 </a>
                 {% endif %}
-                
-                <a href="{% url 'usuarios:gerenciar_acessos' %}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
+
+                <a href="{% url 'usuarios:gerenciar_acessos' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-users w-5"></i>
                     <span>Gerenciar Acessos</span>
                 </a>
             </nav>
         </div>
-        
+
         <!-- User Info -->
         <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-mindhub-gray/30">
             <div class="flex items-center gap-3">
@@ -160,37 +174,39 @@
             </div>
         </div>
     </aside>
-    
+
     <!-- Main Content -->
     <main class="ml-64 min-h-screen">
         <!-- Header -->
         <header class="h-16 border-b border-mindhub-gray/30 flex items-center justify-between px-6">
             <h2 class="text-xl font-semibold text-white">{{ page_title }}</h2>
             <div class="flex items-center gap-4">
-                <button id="btn-refresh" class="text-gray-400 hover:text-white transition-smooth" title="Atualizar dados">
+                <button id="btn-refresh" class="text-gray-400 hover:text-white transition-smooth"
+                    title="Atualizar dados">
                     <i class="fas fa-sync-alt"></i>
                 </button>
                 <span class="text-sm text-gray-400" id="last-update">Carregando...</span>
             </div>
         </header>
-        
+
         <!-- Page Content -->
         <div class="p-6">
             {% block content %}{% endblock %}
         </div>
     </main>
-    
+
     <!-- Drawer (será preenchido pelo JS) -->
     <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
-    <aside id="drawer" class="drawer fixed right-0 top-0 h-full w-96 bg-mindhub-darker border-l border-mindhub-gray/30 z-50 overflow-y-auto">
+    <aside id="drawer"
+        class="drawer fixed right-0 top-0 h-full w-96 bg-mindhub-darker border-l border-mindhub-gray/30 z-50 overflow-y-auto">
         <div id="drawer-content" class="p-6">
             <!-- Conteúdo dinâmico -->
         </div>
     </aside>
-    
+
     <!-- Tooltip -->
     <div id="tooltip" class="tooltip"></div>
-    
+
     <script>
         // Atualiza badge de pendentes
         async function atualizarBadgePendentes() {
@@ -208,32 +224,32 @@
                 console.error('Erro ao buscar pendentes:', error);
             }
         }
-        
+
         // Drawer functions
         function openDrawer() {
             document.getElementById('drawer').classList.add('open');
             document.getElementById('drawer-overlay').classList.remove('hidden');
         }
-        
+
         function closeDrawer() {
             document.getElementById('drawer').classList.remove('open');
             document.getElementById('drawer-overlay').classList.add('hidden');
         }
-        
+
         document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
-        
+
         // Atualiza timestamp
         function updateTimestamp() {
             const now = new Date();
-            document.getElementById('last-update').textContent = 
+            document.getElementById('last-update').textContent =
                 `Atualizado: ${now.toLocaleTimeString('pt-BR')}`;
         }
-        
+
         // Init
         document.addEventListener('DOMContentLoaded', () => {
             atualizarBadgePendentes();
             updateTimestamp();
-            
+
             // Refresh button
             document.getElementById('btn-refresh').addEventListener('click', () => {
                 if (typeof refreshData === 'function') {
@@ -242,13 +258,14 @@
                 updateTimestamp();
             });
         });
-        
+
         // Auto-refresh a cada 30 segundos
         setInterval(() => {
             atualizarBadgePendentes();
         }, 30000);
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

@@ -11,6 +11,7 @@ urlpatterns = [
     path('monitor/', views.monitor_dashboard, name='monitor_dashboard'),
     path('monitor/graph/', views.monitor_graph, name='monitor_graph'),
     path('monitor/validar/', views.monitor_validar, name='monitor_validar'),
+    path('monitor/alunos/', views.monitor_lista_alunos, name='monitor_lista_alunos'),
     path('gerenciar/<int:aluno_id>/', views.gerenciar_trilha, name='gerenciar_trilha'),
     
     # Área do Aluno - Navegação de Dois Níveis

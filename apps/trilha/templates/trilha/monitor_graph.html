@@ -473,13 +473,16 @@
     }
 
     // Drag functions
+    let dragStartTime;
+    let dragStartPos = { x: 0, y: 0 };
+
     function dragstarted(event, d) {
         event.sourceEvent.preventDefault();
         event.sourceEvent.stopPropagation();
-        isDragging = true;
-        clearTimeout(tooltipShowTimer);
-        clearTimeout(tooltipHideTimer);
-        hideTooltip();
+        isDragging = false;
+        dragStartTime = Date.now();
+        dragStartPos = { x: event.x, y: event.y };
+
         if (!event.active) simulation.alphaTarget(0.3).restart();
         if (d.x == null) d.x = event.x;
         if (d.y == null) d.y = event.y;
@@ -488,7 +491,11 @@
     }
 
     function dragged(event, d) {
-        // Converte coordenadas da tela (com zoom) para o espaço do grafo
+        // Verifica movimento significativo (> 3px)
+        if (Math.abs(event.x - dragStartPos.x) > 3 || Math.abs(event.y - dragStartPos.y) > 3) {
+            isDragging = true;
+        }
+
         const transform = d3.zoomTransform(svg.node());
         const p = transform.invert([event.x, event.y]);
         d.fx = p[0];
@@ -499,7 +506,9 @@
         if (!event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
-        setTimeout(() => { isDragging = false; }, 0);
+
+        // Pequeno delay para evitar que o evento de click seja disparado imediatamente se foi um arraste rápido
+        setTimeout(() => { isDragging = false; }, 50);
     }
 
     // Tooltip

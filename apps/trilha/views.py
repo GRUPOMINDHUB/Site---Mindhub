@@ -254,3 +254,18 @@ def gerenciar_trilha(request, aluno_id):
     })
 
 
+@bloquear_comercial
+def monitor_lista_alunos(request):
+    """
+    Lista todos os alunos para gestão de trilhas (Nova Aba).
+    """
+    usuario = verificar_acesso_monitor(request)
+    if not usuario:
+        return redirect('usuarios:login')
+    
+    return render(request, 'trilha/lista_alunos_trilha.html', {
+        'usuario': usuario,
+        'page_title': 'Gestão de Trilhas'
+    })
+
+

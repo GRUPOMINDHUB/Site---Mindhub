@@ -1,0 +1,100 @@
+{% extends "trilha/base_monitor.html" %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-white mb-2">Gestão de Trilhas</h1>
+        <p class="text-gray-400">Selecione um aluno para editar sua trilha personalizada</p>
+    </div>
+    <div class="relative">
+        <input type="text" id="search-input" placeholder="Buscar aluno..."
+            class="bg-mindhub-gray/30 border border-mindhub-gray rounded-lg py-2 px-4 pl-10 text-white focus:outline-none focus:border-mindhub-red w-64 transition-all">
+        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="alunos-grid">
+    <!-- Loading -->
+    <div class="col-span-full text-center py-10">
+        <i class="fas fa-spinner fa-spin text-3xl text-mindhub-red mb-3"></i>
+        <p class="text-gray-400">Carregando alunos...</p>
+    </div>
+</div>
+
+<script>
+    let todosAlunos = [];
+
+    document.addEventListener('DOMContentLoaded', carregarAlunos);
+    document.getElementById('search-input').addEventListener('input', filtrarAlunos);
+
+    async function carregarAlunos() {
+        try {
+            const res = await fetch('/api/monitor/alunos/');
+            const data = await res.json();
+            todosAlunos = data.alunos;
+            renderizarAlunos(todosAlunos);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('alunos-grid').innerHTML = `
+                <div class="col-span-full text-center py-10 text-red-500">
+                    <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                    <p>Erro ao carregar alunos</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderizarAlunos(alunos) {
+        const grid = document.getElementById('alunos-grid');
+
+        if (alunos.length === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-10">
+                    <p class="text-gray-400">Nenhum aluno encontrado.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = alunos.map(aluno => `
+            <a href="/trilha/gerenciar/${aluno.id}/" 
+               class="block bg-mindhub-darker border border-mindhub-gray/30 rounded-xl p-4 hover:border-mindhub-red transition-all group">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-mindhub-gray flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-mindhub-red transition-all">
+                        ${aluno.foto ? `<img src="${aluno.foto}" class="w-full h-full object-cover">` : `<i class="fas fa-user text-gray-400"></i>`}
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-white truncate group-hover:text-mindhub-red transition-colors">${aluno.nome}</h3>
+                        <p class="text-xs text-gray-400 truncate">${aluno.email}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-400 mb-3">
+                    <div class="bg-mindhub-gray/20 rounded p-2 text-center">
+                        <span class="block font-bold text-white text-sm">${aluno.mundo ? aluno.mundo.numero : '-'}</span>
+                        Mundo
+                    </div>
+                    <div class="bg-mindhub-gray/20 rounded p-2 text-center">
+                        <span class="block font-bold text-white text-sm">${aluno.nota}</span>
+                        Nota Saúde
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-gray-500 border-t border-mindhub-gray/20 pt-3">
+                    <span>${aluno.submissoes_pendentes > 0 ? `<span class="text-mindhub-red font-bold">● ${aluno.submissoes_pendentes} Pendentes</span>` : 'Sem pendências'}</span>
+                    <i class="fas fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        `).join('');
+    }
+
+    function filtrarAlunos(e) {
+        const termo = e.target.value.toLowerCase();
+        const filtrados = todosAlunos.filter(a =>
+            a.nome.toLowerCase().includes(termo) ||
+            a.email.toLowerCase().includes(termo)
+        );
+        renderizarAlunos(filtrados);
+    }
+</script>
+{% endblock %}
