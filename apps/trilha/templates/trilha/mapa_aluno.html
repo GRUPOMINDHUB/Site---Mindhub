@@ -449,20 +449,56 @@
             `;
         }
 
-        // ===== CASTLE GOURMET (IMAGEM REAL) =====
+        // ===== CASTELO SVG PIXEL ART =====
         function renderCasteloGourmet(completed) {
+            const mainColor = completed ? '#ffd700' : '#c9a45c';
+            const darkColor = completed ? '#daa520' : '#8b6914';
+            const roofColor = completed ? '#ff6600' : '#cc0000';
+
             return `
-                <g class="castle-image">
-                    <image 
-                        href="/static/images/castelo_gourmet.png" 
-                        x="-140" 
-                        y="-110" 
-                        width="280" 
-                        height="200"
-                        preserveAspectRatio="xMidYMid meet"
-                        style="${completed ? 'filter: drop-shadow(0 0 15px gold);' : ''}"
-                    />
-                    ${completed ? '<text x="0" y="-100" text-anchor="middle" font-size="24">👑</text>' : ''}
+                <g class="pixel-castle">
+                    <!-- Base do castelo -->
+                    <rect x="-60" y="20" width="120" height="60" fill="${mainColor}" stroke="${darkColor}" stroke-width="3"/>
+                    
+                    <!-- Torres laterais -->
+                    <rect x="-70" y="-30" width="30" height="110" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                    <rect x="40" y="-30" width="30" height="110" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                    
+                    <!-- Telhados das torres -->
+                    <polygon points="-55,-30 -55,-55 -40,-30" fill="${roofColor}"/>
+                    <polygon points="55,-30 55,-55 70,-30" fill="${roofColor}"/>
+                    
+                    <!-- Torre central -->
+                    <rect x="-25" y="-20" width="50" height="100" fill="${mainColor}" stroke="${darkColor}" stroke-width="2"/>
+                    
+                    <!-- Telhado central -->
+                    <polygon points="0,-60 -30,-20 30,-20" fill="${roofColor}" stroke="${darkColor}" stroke-width="2"/>
+                    
+                    <!-- Ameias -->
+                    <rect x="-65" y="-38" width="8" height="10" fill="${mainColor}" stroke="${darkColor}"/>
+                    <rect x="-52" y="-38" width="8" height="10" fill="${mainColor}" stroke="${darkColor}"/>
+                    <rect x="44" y="-38" width="8" height="10" fill="${mainColor}" stroke="${darkColor}"/>
+                    <rect x="58" y="-38" width="8" height="10" fill="${mainColor}" stroke="${darkColor}"/>
+                    
+                    <!-- Janelas torres -->
+                    <rect x="-60" y="-10" width="12" height="16" fill="#333" stroke="${darkColor}"/>
+                    <rect x="48" y="-10" width="12" height="16" fill="#333" stroke="${darkColor}"/>
+                    
+                    <!-- Janelas centrais -->
+                    <rect x="-15" y="-5" width="10" height="14" fill="#333" stroke="${darkColor}"/>
+                    <rect x="5" y="-5" width="10" height="14" fill="#333" stroke="${darkColor}"/>
+                    
+                    <!-- Porta -->
+                    <rect x="-12" y="40" width="24" height="40" rx="12" fill="#5a3a1a" stroke="#3a2a0a" stroke-width="2"/>
+                    <circle cx="-4" cy="60" r="3" fill="#ffd700"/>
+                    
+                    <!-- Bandeira -->
+                    <line x1="0" y1="-60" x2="0" y2="-85" stroke="#333" stroke-width="3"/>
+                    <polygon points="0,-85 25,-78 0,-70" fill="${completed ? '#ffd700' : '#cc0000'}"/>
+                    <text x="12" y="-75" font-size="8" text-anchor="middle">${completed ? '★' : '🍔'}</text>
+                    
+                    <!-- Coroa se completo -->
+                    ${completed ? '<text x="0" y="-95" text-anchor="middle" font-size="20">👑</text>' : ''}
                 </g>
             `;
         }
