@@ -43,6 +43,10 @@ def api_monitor_alunos(request):
     
     alunos = Usuario.objects.filter(role=RoleChoices.ALUNO, ativo=True)
     
+    # Se não for ADMIN, filtra apenas os alunos do monitor
+    if monitor.role != RoleChoices.ADMIN:
+        alunos = alunos.filter(monitor_responsavel=monitor)
+    
     # Busca última nota de cada aluno
     alunos_data = []
     for aluno in alunos:
@@ -106,6 +110,10 @@ def api_monitor_aluno_detalhe(request, aluno_id):
     
     try:
         aluno = Usuario.objects.get(id=aluno_id, role=RoleChoices.ALUNO)
+        
+        # Validação de acesso
+        if monitor.role != RoleChoices.ADMIN and aluno.monitor_responsavel_id != monitor.id:
+             return JsonResponse({'error': 'Acesso negado a este aluno'}, status=403)
     except Usuario.DoesNotExist:
         return JsonResponse({'error': 'Aluno não encontrado'}, status=404)
     
@@ -206,6 +214,10 @@ def api_monitor_atualizar_nota(request, aluno_id):
     
     try:
         aluno = Usuario.objects.get(id=aluno_id, role=RoleChoices.ALUNO)
+        
+        # Validação de acesso
+        if monitor.role != RoleChoices.ADMIN and aluno.monitor_responsavel_id != monitor.id:
+             return JsonResponse({'error': 'Acesso negado a este aluno'}, status=403)
     except Usuario.DoesNotExist:
         return JsonResponse({'error': 'Aluno não encontrado'}, status=404)
     
@@ -250,7 +262,13 @@ def api_monitor_submissoes_pendentes(request):
     
     submissoes = Submissao.objects.filter(
         aprovado__isnull=True
-    ).select_related(
+    )
+    
+    # Se não for ADMIN, filtra submissões dos alunos do monitor
+    if monitor.role != RoleChoices.ADMIN:
+        submissoes = submissoes.filter(progresso__aluno__monitor_responsavel=monitor)
+        
+    submissoes = submissoes.select_related(
         'progresso__aluno', 
         'progresso__step__mundo'
     ).order_by('data_envio')
@@ -302,6 +320,11 @@ def api_monitor_validar_submissao(request, submissao_id):
     
     if submissao.aprovado is not None:
         return JsonResponse({'error': 'Submissão já foi validada'}, status=400)
+        
+    # Validação de acesso
+    aluno = submissao.progresso.aluno
+    if monitor.role != RoleChoices.ADMIN and aluno.monitor_responsavel_id != monitor.id:
+         return JsonResponse({'error': 'Acesso negado a esta submissão'}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -350,31 +373,45 @@ def api_monitor_estatisticas(request):
     if error:
         return error
     
+    # Queryset base de alunos
+    qs_alunos = Usuario.objects.filter(role=RoleChoices.ALUNO, ativo=True)
+    if monitor.role != RoleChoices.ADMIN:
+        qs_alunos = qs_alunos.filter(monitor_responsavel=monitor)
+
     # Total de alunos
-    total_alunos = Usuario.objects.filter(role=RoleChoices.ALUNO, ativo=True).count()
+    total_alunos = qs_alunos.count()
     
     # Distribuição por nota
     distribuicao_notas = {}
     for nota in range(1, 6):
         # Conta alunos cuja última nota é igual a 'nota'
+        # Conta alunos cuja última nota é igual a 'nota'
         count = 0
-        for aluno in Usuario.objects.filter(role=RoleChoices.ALUNO, ativo=True):
+        for aluno in qs_alunos:
             if NotaSaude.get_nota_atual(aluno) == nota:
                 count += 1
         distribuicao_notas[nota] = count
     
     # Submissões pendentes
-    submissoes_pendentes = Submissao.objects.filter(aprovado__isnull=True).count()
+    if monitor.role != RoleChoices.ADMIN:
+        submissoes_pendentes = Submissao.objects.filter(
+            aprovado__isnull=True,
+            progresso__aluno__monitor_responsavel=monitor
+        ).count()
+    else:
+        submissoes_pendentes = Submissao.objects.filter(aprovado__isnull=True).count()
     
     # Alunos inativos (sem submissão nos últimos 7 dias)
     limite_inatividade = timezone.now() - timedelta(days=7)
-    alunos_ativos = Submissao.objects.filter(
-        data_envio__gte=limite_inatividade
-    ).values_list('progresso__aluno_id', flat=True).distinct()
-    alunos_inativos = Usuario.objects.filter(
-        role=RoleChoices.ALUNO, 
-        ativo=True
-    ).exclude(id__in=alunos_ativos).count()
+    
+    # Submissões de alunos do monitor (ou todos se admin)
+    qs_submissoes = Submissao.objects.filter(data_envio__gte=limite_inatividade)
+    if monitor.role != RoleChoices.ADMIN:
+        qs_submissoes = qs_submissoes.filter(progresso__aluno__monitor_responsavel=monitor)
+        
+    alunos_ativos_ids = qs_submissoes.values_list('progresso__aluno_id', flat=True).distinct()
+    
+    alunos_inativos = qs_alunos.exclude(id__in=alunos_ativos_ids).count()
     
     # Progresso por mundo
     progresso_mundos = []
@@ -448,6 +485,13 @@ def api_monitor_enviar_alerta(request, aluno_id):
     if error:
         return error
     
+    try:
+        aluno = Usuario.objects.get(id=aluno_id, role=RoleChoices.ALUNO)
+        if monitor.role != RoleChoices.ADMIN and aluno.monitor_responsavel_id != monitor.id:
+             return JsonResponse({'error': 'Acesso negado a este aluno'}, status=403)
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Aluno não encontrado'}, status=404)
+
     try:
         data = json.loads(request.body) if request.body else {}
         mensagem = data.get('mensagem')
