@@ -451,106 +451,106 @@
     </style>
 </head>
 
-<body data-theme="{{ mes.numero }}">
-    <!-- HUD -->
-    <header class="hud">
-        <div class="hud-left">
-            <a href="{% url 'trilha:home_trilha' %}" class="btn-voltar">
-                ◄ VOLTAR
-            </a>
-            <span class="mes-badge">MÊS {{ mes.numero }}</span>
-        </div>
-        <div class="hud-right">
-            <span class="stat">⭐ <span id="xp">0</span> XP</span>
-            <span class="stat">📊 <span id="progress">0/0</span></span>
-        </div>
-    </header>
 
-    <!-- Map -->
-    <main class="map-container">
-        <h1 class="page-title">{{ mes.nome }}</h1>
+<!-- HUD -->
+<header class="hud">
+    <div class="hud-left">
+        <a href="{% url 'trilha:home_trilha' %}" class="btn-voltar">
+            ◄ VOLTAR
+        </a>
+        <span class="mes-badge">MÊS {{ mes.numero }}</span>
+    </div>
+    <div class="hud-right">
+        <span class="stat">⭐ <span id="xp">0</span> XP</span>
+        <span class="stat">📊 <span id="progress">0/0</span></span>
+    </div>
+</header>
 
-        <div class="island">
-            <svg id="trilha-svg" class="trilha-svg" viewBox="0 0 1000 350">
-                <!-- Será renderizado via JS -->
-            </svg>
-        </div>
-    </main>
+<!-- Map -->
+<main class="map-container">
+    <h1 class="page-title">{{ mes.nome }}</h1>
 
-    <!-- Drawer -->
-    <div class="drawer-overlay" id="overlay"></div>
-    <aside class="drawer" id="drawer">
-        <div class="drawer-header">
-            <span class="drawer-title" id="drawer-title">ETAPA</span>
-            <button class="drawer-close" onclick="closeDrawer()">×</button>
-        </div>
-        <div class="drawer-body" id="drawer-body"></div>
-    </aside>
+    <div class="island">
+        <svg id="trilha-svg" class="trilha-svg" viewBox="0 0 1000 350">
+            <!-- Será renderizado via JS -->
+        </svg>
+    </div>
+</main>
 
-    <!-- IA Button -->
-    <button class="ia-btn" onclick="alert('🧠 MindLink - Mês {{ mes.numero }}')">🧠</button>
+<!-- Drawer -->
+<div class="drawer-overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span class="drawer-title" id="drawer-title">ETAPA</span>
+        <button class="drawer-close" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+</aside>
 
-    <script>
-        const MES_ID = {{ mes.id }};
-        const MES_NUMERO = {{ mes.numero }};
-        const STEPS_DATA = {{ steps| safe }};
+<!-- IA Button -->
+<button class="ia-btn" onclick="alert('🧠 MindLink - Mês {{ mes.numero }}')">🧠</button>
 
-        let avatarNode = null;
+<script>
+    const MES_ID = {{ mes.id }};
+    const MES_NUMERO = {{ mes.numero }};
+    const STEPS_DATA = {{ steps_json| safe }};
 
-        // Ícones por status
-        const STATUS_CONFIG = {
-            'BLOQUEADO': { fill: '#555', border: '#333', icon: '🔒' },
-            'EM_ANDAMENTO': { fill: '#ffd700', border: '#daa520', icon: '🎯' },
-            'CONCLUIDO': { fill: '#4ade80', border: '#22c55e', icon: '✓' },
-            'PENDENTE_VALIDACAO': { fill: '#fbbf24', border: '#f59e0b', icon: '⏳' }
-        };
+    let avatarNode = null;
 
-        function renderTrilha() {
-            const svg = document.getElementById('trilha-svg');
-            const stepCount = STEPS_DATA.length || 1;
+    // Ícones por status
+    const STATUS_CONFIG = {
+        'BLOQUEADO': { fill: '#555', border: '#333', icon: '🔒' },
+        'EM_ANDAMENTO': { fill: '#ffd700', border: '#daa520', icon: '🎯' },
+        'CONCLUIDO': { fill: '#4ade80', border: '#22c55e', icon: '✓' },
+        'PENDENTE_VALIDACAO': { fill: '#fbbf24', border: '#f59e0b', icon: '⏳' }
+    };
 
-            // Calcular pontos
-            const startX = 80;
-            const endX = 920;
-            const availableWidth = endX - startX;
-            const points = [];
+    function renderTrilha() {
+        const svg = document.getElementById('trilha-svg');
+        const stepCount = STEPS_DATA.length || 1;
 
-            for (let i = 0; i < stepCount; i++) {
-                const x = startX + (availableWidth / (stepCount + 1)) * (i + 1);
-                const y = i % 2 === 0 ? 120 : 230;
-                points.push({ x, y });
+        // Calcular pontos
+        const startX = 80;
+        const endX = 920;
+        const availableWidth = endX - startX;
+        const points = [];
+
+        for (let i = 0; i < stepCount; i++) {
+            const x = startX + (availableWidth / (stepCount + 1)) * (i + 1);
+            const y = i % 2 === 0 ? 120 : 230;
+            points.push({ x, y });
+        }
+
+        // Construir path
+        let pathD = `M ${startX},175`;
+        points.forEach((pt, i) => {
+            if (i === 0) {
+                pathD += ` Q ${startX + 30},175 ${pt.x},${pt.y}`;
+            } else {
+                const prev = points[i - 1];
+                const midX = (prev.x + pt.x) / 2;
+                pathD += ` Q ${midX},${prev.y} ${midX},175 Q ${midX},${pt.y} ${pt.x},${pt.y}`;
             }
+        });
+        const lastPt = points[points.length - 1] || { x: startX, y: 175 };
+        pathD += ` Q ${lastPt.x + 50},${lastPt.y} ${endX},175`;
 
-            // Construir path
-            let pathD = `M ${startX},175`;
-            points.forEach((pt, i) => {
-                if (i === 0) {
-                    pathD += ` Q ${startX + 30},175 ${pt.x},${pt.y}`;
-                } else {
-                    const prev = points[i - 1];
-                    const midX = (prev.x + pt.x) / 2;
-                    pathD += ` Q ${midX},${prev.y} ${midX},175 Q ${midX},${pt.y} ${pt.x},${pt.y}`;
-                }
-            });
-            const lastPt = points[points.length - 1] || { x: startX, y: 175 };
-            pathD += ` Q ${lastPt.x + 50},${lastPt.y} ${endX},175`;
-
-            let html = `
+        let html = `
                 <path d="${pathD}" class="path-border"/>
                 <path d="${pathD}" class="path-main"/>
                 <path d="${pathD}" class="path-detail"/>
             `;
 
-            // Renderizar steps
-            STEPS_DATA.forEach((step, i) => {
-                const pt = points[i];
-                if (!pt) return;
+        // Renderizar steps
+        STEPS_DATA.forEach((step, i) => {
+            const pt = points[i];
+            if (!pt) return;
 
-                const config = STATUS_CONFIG[step.status] || STATUS_CONFIG['BLOQUEADO'];
-                const isLocked = step.status === 'BLOQUEADO';
-                const isCurrent = step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO';
+            const config = STATUS_CONFIG[step.status] || STATUS_CONFIG['BLOQUEADO'];
+            const isLocked = step.status === 'BLOQUEADO';
+            const isCurrent = step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO';
 
-                html += `
+            html += `
                     <g class="step-node ${isLocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}" 
                        transform="translate(${pt.x}, ${pt.y})"
                        onclick="${!isLocked ? `openDrawer(${step.id})` : ''}">
@@ -562,14 +562,14 @@
                     </g>
                 `;
 
-                if (isCurrent) {
-                    avatarNode = { x: pt.x, y: pt.y - 50 };
-                }
-            });
+            if (isCurrent) {
+                avatarNode = { x: pt.x, y: pt.y - 50 };
+            }
+        });
 
-            // Avatar
-            if (avatarNode) {
-                html += `
+        // Avatar
+        if (avatarNode) {
+            html += `
                     <g transform="translate(${avatarNode.x}, ${avatarNode.y})">
                         <g style="animation: avatarBounce 0.6s ease-in-out infinite;">
                             <ellipse cx="0" cy="35" rx="12" ry="4" fill="rgba(0,0,0,0.3)"/>
@@ -592,24 +592,24 @@
                         }
                     </style>
                 `;
-            }
-
-            svg.innerHTML = html;
-
-            // Atualizar progresso
-            const concluidos = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').length;
-            document.getElementById('progress').textContent = `${concluidos}/${STEPS_DATA.length}`;
-            document.getElementById('xp').textContent = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').reduce((sum, s) => sum + s.pontos, 0);
         }
 
-        async function openDrawer(stepId) {
-            try {
-                const res = await fetch(`/api/aluno/step/${stepId}/`);
-                const data = await res.json();
+        svg.innerHTML = html;
 
-                document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
+        // Atualizar progresso
+        const concluidos = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').length;
+        document.getElementById('progress').textContent = `${concluidos}/${STEPS_DATA.length}`;
+        document.getElementById('xp').textContent = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').reduce((sum, s) => sum + s.pontos, 0);
+    }
 
-                let html = `
+    async function openDrawer(stepId) {
+        try {
+            const res = await fetch(`/api/aluno/step/${stepId}/`);
+            const data = await res.json();
+
+            document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
+
+            let html = `
                     <div class="info-card">
                         <h3>📜 MISSÃO</h3>
                         <p>${data.instrucoes || 'Complete esta etapa!'}</p>
@@ -617,75 +617,75 @@
                     <div class="xp-badge">⭐ +${data.pontos || 10} XP</div>
                 `;
 
-                if (data.feedback_anterior) {
-                    html += `<div class="info-card" style="border-color:#ff4444"><h3>⚠️ REFAZER</h3><p>${data.feedback_anterior}</p></div>`;
-                }
+            if (data.feedback_anterior) {
+                html += `<div class="info-card" style="border-color:#ff4444"><h3>⚠️ REFAZER</h3><p>${data.feedback_anterior}</p></div>`;
+            }
 
-                if (data.status === 'EM_ANDAMENTO') {
-                    const input = data.tipo_validacao === 'FOTO'
-                        ? `<input type="file" name="arquivo" accept="image/*" class="form-field" required>`
-                        : `<textarea name="resposta_texto" rows="4" class="form-field" placeholder="Sua resposta..." required></textarea>`;
-                    html += `<form onsubmit="submitStep(event,${data.id})"><input type="hidden" name="step_id" value="${data.id}">${input}<button type="submit" class="btn-submit">🚀 ENVIAR</button></form>`;
-                } else if (data.status === 'PENDENTE_VALIDACAO') {
-                    html += `<div class="info-card"><h3>⏳ AGUARDANDO</h3><p>O mentor está avaliando...</p></div>`;
-                } else if (data.status === 'CONCLUIDO') {
-                    html += `<div class="info-card" style="border-color:#22c55e"><h3>✅ APROVADO!</h3><p>+${data.pontos || 10} XP conquistados!</p></div>`;
-                }
+            if (data.status === 'EM_ANDAMENTO') {
+                const input = data.tipo_validacao === 'FOTO'
+                    ? `<input type="file" name="arquivo" accept="image/*" class="form-field" required>`
+                    : `<textarea name="resposta_texto" rows="4" class="form-field" placeholder="Sua resposta..." required></textarea>`;
+                html += `<form onsubmit="submitStep(event,${data.id})"><input type="hidden" name="step_id" value="${data.id}">${input}<button type="submit" class="btn-submit">🚀 ENVIAR</button></form>`;
+            } else if (data.status === 'PENDENTE_VALIDACAO') {
+                html += `<div class="info-card"><h3>⏳ AGUARDANDO</h3><p>O mentor está avaliando...</p></div>`;
+            } else if (data.status === 'CONCLUIDO') {
+                html += `<div class="info-card" style="border-color:#22c55e"><h3>✅ APROVADO!</h3><p>+${data.pontos || 10} XP conquistados!</p></div>`;
+            }
 
-                document.getElementById('drawer-body').innerHTML = html;
-                document.getElementById('drawer').classList.add('active');
-                document.getElementById('overlay').classList.add('active');
-            } catch (e) { console.error(e); }
-        }
+            document.getElementById('drawer-body').innerHTML = html;
+            document.getElementById('drawer').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        } catch (e) { console.error(e); }
+    }
 
-        function closeDrawer() {
-            document.getElementById('drawer').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-        }
+    function closeDrawer() {
+        document.getElementById('drawer').classList.remove('active');
+        document.getElementById('overlay').classList.remove('active');
+    }
 
-        document.getElementById('overlay').addEventListener('click', closeDrawer);
+    document.getElementById('overlay').addEventListener('click', closeDrawer);
 
-        async function submitStep(e, id) {
-            e.preventDefault();
-            const form = e.target;
-            const fd = new FormData(form);
-            const btn = form.querySelector('button');
-            btn.textContent = '⏳...';
-            btn.disabled = true;
+    async function submitStep(e, id) {
+        e.preventDefault();
+        const form = e.target;
+        const fd = new FormData(form);
+        const btn = form.querySelector('button');
+        btn.textContent = '⏳...';
+        btn.disabled = true;
 
-            try {
-                const r = await fetch('/api/aluno/submeter/', {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                    body: fd
-                });
-                if (r.ok) {
-                    closeDrawer();
-                    window.location.reload();
-                } else {
-                    const d = await r.json();
-                    alert('Erro: ' + (d.error || 'Tente novamente'));
-                    btn.textContent = '🚀 ENVIAR';
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                alert('Erro de conexão');
+        try {
+            const r = await fetch('/api/aluno/submeter/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: fd
+            });
+            if (r.ok) {
+                closeDrawer();
+                window.location.reload();
+            } else {
+                const d = await r.json();
+                alert('Erro: ' + (d.error || 'Tente novamente'));
                 btn.textContent = '🚀 ENVIAR';
                 btn.disabled = false;
             }
+        } catch (err) {
+            alert('Erro de conexão');
+            btn.textContent = '🚀 ENVIAR';
+            btn.disabled = false;
         }
+    }
 
-        function getCookie(n) {
-            let v = null;
-            document.cookie.split(';').forEach(c => {
-                c = c.trim();
-                if (c.startsWith(n + '=')) v = decodeURIComponent(c.substring(n.length + 1));
-            });
-            return v;
-        }
+    function getCookie(n) {
+        let v = null;
+        document.cookie.split(';').forEach(c => {
+            c = c.trim();
+            if (c.startsWith(n + '=')) v = decodeURIComponent(c.substring(n.length + 1));
+        });
+        return v;
+    }
 
-        document.addEventListener('DOMContentLoaded', renderTrilha);
-    </script>
+    document.addEventListener('DOMContentLoaded', renderTrilha);
+</script>
 </body>
 
 </html>
