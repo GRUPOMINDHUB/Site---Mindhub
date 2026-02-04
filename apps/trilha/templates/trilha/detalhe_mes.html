@@ -17,12 +17,14 @@
             /* Cores Globais */
             --mindhub-red: #e30613;
             --gold: #ffd700;
-            --gold-dark: #daa520;
+            --gold-dark: #b8860b;
             --bg-dark: #121212;
 
-            /* Tema Padrão (Deserto Ouro) */
-            --bg-top: #87CEEB;
-            --bg-bottom: #d4a574;
+            /* Tema Ouro (Padrão) */
+            --bg-grad-start: #2c1e0f;
+            --bg-grad-end: #000000;
+            --border-light: #ffd700;
+            --border-dark: #8b4513;
             --ground: #eecfa1;
             --ground-dark: #cfaa70;
             --path-fill: #daa520;
@@ -33,26 +35,14 @@
         /* Temas Específicos */
         [data-theme="1"] {
             /* Deserto */
-            --ground: #eecfa1;
-            --ground-dark: #cfaa70;
-            --bg-top: #87CEEB;
-            --bg-bottom: #f4a460;
         }
 
         [data-theme="2"] {
-            /* Doces */
-            --ground: #ffe4e1;
-            --ground-dark: #ffb6c1;
-            --bg-top: #ffc0cb;
-            --bg-bottom: #fff0f5;
+            --bg-grad-start: #2a1015;
         }
 
         [data-theme="3"] {
-            /* Sushi */
-            --ground: #2f4f4f;
-            --ground-dark: #1a2a2a;
-            --bg-top: #191970;
-            --bg-bottom: #2f4f4f;
+            --bg-grad-start: #0a102a;
         }
 
         * {
@@ -60,70 +50,198 @@
             padding: 0;
             box-sizing: border-box;
             image-rendering: pixelated;
-            /* Crucial para Pixel Art */
             -webkit-font-smoothing: none;
         }
 
         body {
             font-family: 'Press Start 2P', cursive;
-            background-color: var(--bg-dark);
+            background: radial-gradient(circle at center, var(--bg-grad-start), var(--bg-grad-end));
             color: #fff;
             overflow-x: hidden;
             min-height: 100vh;
         }
 
+        /* Moldura do Mapa */
+        .map-outer-frame {
+            border: 8px solid var(--border-light);
+            box-shadow:
+                0 0 0 4px var(--border-dark),
+                0 0 20px rgba(255, 215, 0, 0.2);
+            padding: 8px;
+            background: #1a1a1a;
+            position: relative;
+            margin-bottom: 50px;
+        }
+
+        .month-title {
+            text-align: center;
+            font-size: 24px;
+            color: var(--gold);
+            text-shadow: 4px 4px 0 var(--mindhub-red);
+            margin-bottom: 30px;
+            line-height: 1.5;
+            text-transform: uppercase;
+        }
+
+        /* Lista de Steps Alternativa */
+        .steps-list-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+
+        .list-header-frame {
+            border: 4px solid var(--border-light);
+            background: var(--mindhub-red);
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .list-title {
+            color: #fff;
+            font-size: 14px;
+            margin: 0;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .step-card {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #444;
+            margin-bottom: 12px;
+            padding: 15px;
+            transition: all 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            transform: translateX(5px);
+            background: rgba(40, 40, 40, 0.9);
+        }
+
+        .step-card.status-CONCLUIDO {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .step-card.status-EM_ANDAMENTO,
+        .step-card.status-PENDENTE_VALIDACAO {
+            border-color: var(--gold);
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            animation: cardPulse 2s infinite;
+        }
+
+        .step-card.status-BLOQUEADO {
+            opacity: 0.6;
+            cursor: not-allowed;
+            border-color: #333;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .step-card.status-BLOQUEADO:hover {
+            transform: none;
+        }
+
+        .card-icon {
+            font-size: 18px;
+            width: 40px;
+            text-align: center;
+            margin-right: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-info {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .status-CONCLUIDO .card-title {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .card-action {
+            margin-left: 15px;
+        }
+
+        .btn-pixel {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            padding: 8px 10px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 3px 3px 0 #000;
+            transition: transform 0.1s;
+        }
+
+        .btn-pixel:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+
+        .btn-action-primary {
+            background: var(--gold);
+            color: #000;
+            border: 2px solid #fff;
+        }
+
+        .btn-action-primary:hover {
+            background: #fff;
+        }
+
+        .btn-action-secondary {
+            background: #333;
+            color: #fff;
+            border: 2px solid #666;
+        }
+
+        .btn-action-secondary:hover {
+            background: #555;
+        }
+
+        @keyframes cardPulse {
+            0% {
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+                border-color: #fff;
+            }
+
+            100% {
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+            }
+        }
+
         /* ═══════════════════════════════════════════════════════════════════
-           Z-INDEX LAYERING SYSTEM (Correção de Piscamento)
+           Z-INDEX & HUD
         ═══════════════════════════════════════════════════════════════════ */
         .layer-bg {
             z-index: 0;
         }
 
-        /* Céu, Nuvens */
-        .layer-ground {
-            z-index: 10;
-        }
-
-        /* Terreno base */
-        .layer-decor {
-            z-index: 20;
-        }
-
-        /* Dunas, Oásis estáticos */
-        .layer-path {
-            z-index: 30;
-        }
-
-        /* SVG da Trilha (Estrada) */
-        .layer-castle {
-            z-index: 35;
-        }
-
-        /* Castelo Final */
-        .layer-steps {
-            z-index: 40;
-        }
-
-        /* Nodes Interativos */
-        .layer-avatar {
-            z-index: 50;
-        }
-
-        /* Personagem */
         .layer-hud {
             z-index: 100;
         }
 
-        /* Interface Fixa */
         .layer-drawer {
             z-index: 200;
         }
 
-        /* Drawer Lateral */
-
-        /* ═══════════════════════════════════════════════════════════════════
-           HUD
-        ═══════════════════════════════════════════════════════════════════ */
         .hud {
             position: fixed;
             top: 0;
@@ -579,28 +697,71 @@
 
     <!-- MAIN SCENE -->
     <div class="scene-container">
-        <!-- WRAPPER COM BACKGROUND IMAGE -->
-        <!-- =================================================================
-             SEÇÃO: MAPA INTERATIVO
-             Imagem de fundo com steps sobrepostos
-             ================================================================= -->
-        <div class="map-container" id="map-area" onclick="logCoordinates(event)">
 
-            <!-- CAMADA DE STEPS (Nós da Trilha) -->
-            <div id="steps-layer"></div>
+        <h1 class="month-title">{{ page_title }}</h1>
 
-            <!-- AVATAR -->
-            <div id="avatar-container" class="avatar-container">
-                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ usuario.username }}" class="avatar-img">
+        <!-- WRAPPER COM MOLDURA -->
+        <div class="map-outer-frame">
+            <div class="map-container" id="map-area" onclick="logCoordinates(event)">
+
+                <!-- CAMADA DE STEPS (Nós da Trilha) -->
+                <div id="steps-layer"></div>
+
+                <!-- AVATAR -->
+                <div id="avatar-container" class="avatar-container">
+                    <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ usuario.username }}"
+                        class="avatar-img">
+                </div>
+
+                <!-- DEBUG INFO -->
+                <div id="debug-coords">Click map to get X,Y</div>
+            </div>
+        </div>
+
+        <!-- SEÇÃO: LISTA DE STEPS ALTERNATIVA -->
+        <div class="steps-list-container">
+            <div class="list-header-frame">
+                <h2 class="list-title">LISTA DE TAREFAS DO MÊS</h2>
             </div>
 
-            <!-- DEBUG INFO -->
-            <div id="debug-coords">Click map to get X,Y</div>
+            <div class="steps-list">
+                {% for step in steps %}
+                <div class="step-card status-{{ step.status }}" {% if step.status != 'BLOQUEADO' %}onclick="openDrawer({{ step.id }})"{% endif %}>
+                    <!-- Ícone -->
+                    <div class="card-icon">
+                        {% if step.status == 'CONCLUIDO' %}
+                        <i class="fa-solid fa-check" style="color:#4ade80;"></i>
+                        {% elif step.status == 'EM_ANDAMENTO' or step.status == 'PENDENTE_VALIDACAO' %}
+                        <i class="fa-solid fa-play" style="color:var(--gold);"></i>
+                        {% else %}
+                        <i class="fa-solid fa-lock" style="color:#666;"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Info -->
+                    <div class="card-info">
+                        <div class="card-title">
+                            {{ step.ordem }}. {{ step.titulo }}
+                        </div>
+                    </div>
+
+                    <!-- Ação -->
+                    <div class="card-action">
+                        {% if step.status == 'EM_ANDAMENTO' or step.status == 'PENDENTE_VALIDACAO' %}
+                        <button class="btn-pixel btn-action-primary">CONTINUAR</button>
+                        {% elif step.status == 'CONCLUIDO' %}
+                        <button class="btn-pixel btn-action-secondary">REVER</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
+
     </div>
 
     <!-- DRAWER (z-200) -->
-    <div class="drawer-overlay layer-drawer" id="overlay"></div>
+    <div class="drawer-overlay layer-drawer" id="overlay" onclick="closeDrawer()"></div>
     <aside class="drawer layer-drawer" id="drawer">
         <header class="drawer-header">
             <h2 id="drawer-title">ETAPA X</h2>
