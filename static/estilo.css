@@ -368,7 +368,12 @@ body:not(.login-page) {
 /* Estilo para quando o botão estiver desativado (carregando) */
 .btn-reset-base:disabled {
     opacity: 0.6;
-    cursor: not-allowed;
+
+/* OTIMIZAÇÃO DE RENDERIZAÇÃO PIXEL ART */
+.pixelated, .pixel-art {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 .btn-confirmar-edicao {

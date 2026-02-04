@@ -12,7 +12,7 @@ import secrets
 import string
 
 from .models import Usuario, RoleChoices
-
+from .utils import get_usuario_logado
 
 def index(request):
     """
@@ -87,17 +87,6 @@ def logout(request):
 # ========================================
 # GESTÃO DE ACESSOS
 # ========================================
-
-def get_usuario_logado(request):
-    """Retorna o usuário logado ou None."""
-    email = request.session.get('usuario')
-    if not email:
-        return None
-    try:
-        return Usuario.objects.get(email=email)
-    except Usuario.DoesNotExist:
-        return None
-
 
 def gerenciar_acessos(request):
     """

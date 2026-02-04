@@ -1,28 +1,23 @@
 """
 Views do app Trilha - Mindhub OS.
 """
+import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponseForbidden
-import json
+from django.contrib import messages
+from django.db.models import Prefetch
 
 from apps.usuarios.models import Usuario, RoleChoices
+from apps.usuarios.utils import get_usuario_logado
 from .models import Mundo, Step, ProgressoAluno, StatusProgresso
 from .decorators import aluno_required
 
 
 def verificar_acesso_monitor(request):
     """Verifica se o usuário tem acesso de monitor (ADMIN ou MONITOR)."""
-    email = request.session.get('usuario')
-    if not email:
-        return None
-    
-    try:
-        usuario = Usuario.objects.get(email=email)
-        if usuario.pode_validar:
-            return usuario
-    except Usuario.DoesNotExist:
-        pass
-    
+    usuario = get_usuario_logado(request)
+    if usuario and usuario.pode_validar:
+        return usuario
     return None
 
 
@@ -34,7 +29,6 @@ def bloquear_comercial(view_func):
             try:
                 usuario = Usuario.objects.get(email=email)
                 if usuario.is_comercial:
-                    from django.contrib import messages
                     messages.error(request, 'Acesso Restrito: Você não tem permissão para acessar esta página.')
                     return redirect('usuarios:gerenciar_acessos')
             except Usuario.DoesNotExist:
@@ -110,21 +104,30 @@ def home_trilha(request):
     """
     aluno = request.usuario
     
-    # Busca todos os meses do aluno
-    meses = Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero')
+    # Otimização de Query (Prefetch steps filtrados)
+    steps_prefetch = Prefetch(
+        'steps', 
+        queryset=Step.objects.filter(ativo=True).order_by('ordem')
+    )
+    meses = Mundo.objects.filter(aluno=aluno, ativo=True)\
+        .prefetch_related(steps_prefetch)\
+        .order_by('numero')
     
     # Prepara dados dos meses com status
     meses_data = []
     mes_atual = None
     
     for mes in meses:
-        steps = mes.steps.filter(ativo=True).order_by('ordem')
-        total_steps = steps.count()
+        # Usa .all() para aproveitar o prefetch
+        steps = mes.steps.all()
+        total_steps = len(steps)
         
         # Conta steps concluídos
         concluidos = 0
         tem_em_andamento = False
         
+        # Otimização: Buscar progressos em lote seria ideal, mas complexo aqui.
+        # Mantendo loop simples por enquanto, mas steps já estão na memória.
         for step in steps:
             progresso = ProgressoAluno.objects.filter(aluno=aluno, step=step).first()
             if progresso:
@@ -146,7 +149,7 @@ def home_trilha(request):
         meses_data.append({
             'id': mes.id,
             'numero': mes.numero,
-            'nome': mes.nome,
+            'nome': f'Mês {mes.numero}', # Override do nome do banco
             'status': status,
             'concluidos': concluidos,
             'total': total_steps,
@@ -162,7 +165,7 @@ def home_trilha(request):
     return render(request, 'trilha/home_trilha.html', {
         'usuario': aluno,
         'meses': meses_data,
-        'page_title': 'Império dos Meses - Gestor de Sucesso'
+        'page_title': 'Gamificação'
     })
 
 
@@ -226,16 +229,18 @@ def detalhe_mes(request, mes_id):
                 s['status'] = StatusProgresso.EM_ANDAMENTO
                 break
     
+    display_numero = ((mes.numero - 1) % 6) + 1
+    
     return render(request, 'trilha/detalhe_mes.html', {
         'usuario': aluno,
         'mes': {
             'id': mes.id,
-            'numero': mes.numero,
-            'nome': mes.nome,
+            'numero': display_numero,
+            'nome': f'Mês {display_numero}', # Override do nome do banco
         },
         'steps': steps_data,
         'steps_json': json.dumps(steps_data),
-        'page_title': f'Mês {mes.numero}: {mes.nome}'
+        'page_title': f'Mês {display_numero}: Mês {display_numero}'
     })
 
 

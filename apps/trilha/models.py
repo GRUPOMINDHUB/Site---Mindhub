@@ -87,6 +87,10 @@ class Step(models.Model):
     pontos = models.IntegerField(default=10, help_text="Pontos ao completar este step")
     ativo = models.BooleanField(default=True)
     
+    # Coordenadas do mapa (0-100%)
+    pos_x = models.IntegerField(default=0, help_text="Posição Horizontal (%)")
+    pos_y = models.IntegerField(default=0, help_text="Posição Vertical (%)")
+    
     class Meta:
         ordering = ['mundo__numero', 'ordem']
         verbose_name = 'Step'

@@ -11,99 +11,118 @@
 
     <style>
         /* ═══════════════════════════════════════════════════════════════════
-           PIXEL ART HD - BASE
+           PIXEL ART HD - CORE
         ═══════════════════════════════════════════════════════════════════ */
+        :root {
+            /* Cores Globais */
+            --mindhub-red: #e30613;
+            --gold: #ffd700;
+            --gold-dark: #daa520;
+            --bg-dark: #121212;
+
+            /* Tema Padrão (Deserto Ouro) */
+            --bg-top: #87CEEB;
+            --bg-bottom: #d4a574;
+            --ground: #eecfa1;
+            --ground-dark: #cfaa70;
+            --path-fill: #daa520;
+            --path-border: #8b6914;
+            --accent: #ffd700;
+        }
+
+        /* Temas Específicos */
+        [data-theme="1"] {
+            /* Deserto */
+            --ground: #eecfa1;
+            --ground-dark: #cfaa70;
+            --bg-top: #87CEEB;
+            --bg-bottom: #f4a460;
+        }
+
+        [data-theme="2"] {
+            /* Doces */
+            --ground: #ffe4e1;
+            --ground-dark: #ffb6c1;
+            --bg-top: #ffc0cb;
+            --bg-bottom: #fff0f5;
+        }
+
+        [data-theme="3"] {
+            /* Sushi */
+            --ground: #2f4f4f;
+            --ground-dark: #1a2a2a;
+            --bg-top: #191970;
+            --bg-bottom: #2f4f4f;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-
-        :root {
-            --mindhub-red: #e30613;
-            --gold: #ffd700;
-            --gold-dark: #daa520;
-        }
-
-        /* Temas por Mês */
-        [data-theme="1"] {
-            /* Deserto de Ouro */
-            --bg-top: #87CEEB;
-            --bg-bottom: #d4a574;
-            --ground: #d4a574;
-            --ground-dark: #b8944c;
-            --path: #c9a45c;
-            --path-border: #8b6914;
-            --accent: #ffd700;
-        }
-
-        [data-theme="2"] {
-            /* Reino dos Doces */
-            --bg-top: #ffb6c1;
-            --bg-bottom: #ffe4e1;
-            --ground: #f5deb3;
-            --ground-dark: #deb887;
-            --path: #d2691e;
-            --path-border: #8b4513;
-            --accent: #ff69b4;
-        }
-
-        [data-theme="3"] {
-            /* Vale do Sushi */
-            --bg-top: #1a1a2e;
-            --bg-bottom: #2d4a3e;
-            --ground: #2d4a3e;
-            --ground-dark: #1a3028;
-            --path: #4a3728;
-            --path-border: #2f1f14;
-            --accent: #dc143c;
-        }
-
-        [data-theme="4"] {
-            /* Metrópole Burger */
-            --bg-top: #1a1a2e;
-            --bg-bottom: #333333;
-            --ground: #333333;
-            --ground-dark: #1a1a1a;
-            --path: #444444;
-            --path-border: #222222;
-            --accent: #ff4500;
-        }
-
-        [data-theme="5"] {
-            /* Toscana Pizza */
-            --bg-top: #87CEEB;
-            --bg-bottom: #7cb342;
-            --ground: #7cb342;
-            --ground-dark: #558b2f;
-            --path: #8b7355;
-            --path-border: #5c4a32;
-            --accent: #8b0000;
-        }
-
-        [data-theme="6"] {
-            /* Império Gourmet */
-            --bg-top: #1a1a3a;
-            --bg-bottom: #2a2a5a;
-            --ground: #1a1a2e;
-            --ground-dark: #0a0a1e;
-            --path: #8b0000;
-            --path-border: #4a0000;
-            --accent: #ffd700;
+            /* Crucial para Pixel Art */
+            -webkit-font-smoothing: none;
         }
 
         body {
             font-family: 'Press Start 2P', cursive;
-            min-height: 100vh;
-            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            background-color: var(--bg-dark);
             color: #fff;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
         /* ═══════════════════════════════════════════════════════════════════
-           HUD - TOP BAR
+           Z-INDEX LAYERING SYSTEM (Correção de Piscamento)
+        ═══════════════════════════════════════════════════════════════════ */
+        .layer-bg {
+            z-index: 0;
+        }
+
+        /* Céu, Nuvens */
+        .layer-ground {
+            z-index: 10;
+        }
+
+        /* Terreno base */
+        .layer-decor {
+            z-index: 20;
+        }
+
+        /* Dunas, Oásis estáticos */
+        .layer-path {
+            z-index: 30;
+        }
+
+        /* SVG da Trilha (Estrada) */
+        .layer-castle {
+            z-index: 35;
+        }
+
+        /* Castelo Final */
+        .layer-steps {
+            z-index: 40;
+        }
+
+        /* Nodes Interativos */
+        .layer-avatar {
+            z-index: 50;
+        }
+
+        /* Personagem */
+        .layer-hud {
+            z-index: 100;
+        }
+
+        /* Interface Fixa */
+        .layer-drawer {
+            z-index: 200;
+        }
+
+        /* Drawer Lateral */
+
+        /* ═══════════════════════════════════════════════════════════════════
+           HUD
         ═══════════════════════════════════════════════════════════════════ */
         .hud {
             position: fixed;
@@ -111,215 +130,370 @@
             left: 0;
             right: 0;
             height: 60px;
-            background: linear-gradient(180deg, #228b22 0%, #145214 100%);
-            border-bottom: 4px solid #0a3a0a;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 4px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            z-index: 1000;
-            box-shadow: 0 4px 0 #0a3a0a;
-        }
-
-        .hud-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            backdrop-filter: blur(4px);
         }
 
         .btn-voltar {
-            padding: 8px 16px;
-            background: #555;
-            border: 3px solid #fff;
-            box-shadow: 3px 3px 0 #000;
-            font-family: inherit;
-            font-size: 8px;
+            background: #333;
             color: #fff;
+            padding: 8px 12px;
             text-decoration: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 10px;
+            border: 2px solid #fff;
+            box-shadow: 4px 4px 0 #000;
         }
 
         .btn-voltar:hover {
-            background: #666;
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
         }
 
         .mes-badge {
-            padding: 6px 14px;
             background: var(--accent);
-            border: 3px solid #fff;
-            box-shadow: 3px 3px 0 #000;
-            font-size: 8px;
             color: #000;
-        }
-
-        .hud-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .stat {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding: 5px 10px;
             font-size: 10px;
-            text-shadow: 2px 2px 0 #000;
+            border: 2px solid #fff;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+            margin-left: 10px;
         }
 
         /* ═══════════════════════════════════════════════════════════════════
-           MAP CONTAINER
+           SCENE CONTAINER
         ═══════════════════════════════════════════════════════════════════ */
-        .map-container {
-            padding: 80px 20px 40px;
+        .scene-container {
+            position: relative;
+            width: 100%;
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 80px auto 40px;
+            /* HUD space */
+            padding: 20px;
         }
 
-        .page-title {
-            text-align: center;
-            font-size: 14px;
-            color: #fff;
-            text-shadow: 3px 3px 0 #000;
-            margin-bottom: 30px;
-        }
-
-        /* ═══════════════════════════════════════════════════════════════════
-           ILHA/TERRENO
-        ═══════════════════════════════════════════════════════════════════ */
-        .island {
+        .island-wrapper {
             position: relative;
             background: var(--ground);
-            border: 4px solid var(--ground-dark);
-            padding: 30px 20px;
-            box-shadow:
-                0 8px 0 var(--ground-dark),
-                0 12px 0 rgba(0, 0, 0, 0.3);
+            border: 8px solid var(--ground-dark);
+            border-radius: 4px;
+            /* Slight round for aesthetics */
+            box-shadow: 0 20px 0 rgba(0, 0, 0, 0.2), 0 40px 50px rgba(0, 0, 0, 0.5);
+            min-height: 500px;
+            overflow: hidden;
+            /* Mantém tudo dentro da ilha */
         }
 
-        .island::before {
+        /* Graminha Pixel Art no Topo da Borda */
+        .island-wrapper::before {
             content: '';
             position: absolute;
-            top: -12px;
+            top: -8px;
             left: 0;
             right: 0;
-            height: 16px;
+            height: 8px;
             background: repeating-linear-gradient(90deg,
-                    transparent 0px, transparent 8px,
-                    #4a9828 8px, #4a9828 12px,
-                    transparent 12px, transparent 16px,
-                    #3a7818 16px, #3a7818 20px);
-            clip-path: polygon(0% 100%, 2% 40%, 4% 100%, 6% 30%, 8% 100%,
-                    10% 50%, 12% 100%, 14% 20%, 16% 100%, 18% 40%, 20% 100%,
-                    22% 30%, 24% 100%, 26% 50%, 28% 100%, 30% 20%, 32% 100%,
-                    34% 40%, 36% 100%, 38% 30%, 40% 100%, 42% 50%, 44% 100%,
-                    46% 20%, 48% 100%, 50% 40%, 52% 100%, 54% 30%, 56% 100%,
-                    58% 50%, 60% 100%, 62% 20%, 64% 100%, 66% 40%, 68% 100%,
-                    70% 30%, 72% 100%, 74% 50%, 76% 100%, 78% 20%, 80% 100%,
-                    82% 40%, 84% 100%, 86% 30%, 88% 100%, 90% 50%, 92% 100%,
-                    94% 20%, 96% 100%, 98% 40%, 100% 100%);
+                    var(--ground-dark) 0, var(--ground-dark) 4px,
+                    transparent 4px, transparent 8px);
+            z-index: 100;
         }
 
         /* ═══════════════════════════════════════════════════════════════════
-           SVG TRILHA
+           DECORATION (Dunas e Nuvens)
         ═══════════════════════════════════════════════════════════════════ */
-        .trilha-svg {
+        .cloud {
+            position: absolute;
+            background: #fff;
+            opacity: 0.6;
+            pointer-events: none;
+            /* Simple pixel cloud shape using box-shadow */
+            box-shadow: 10px 0 0 #fff, -10px 0 0 #fff, 0 -10px 0 #fff;
+            width: 30px;
+            height: 30px;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translateX(-100px);
+            }
+
+            to {
+                transform: translateX(1200px);
+            }
+        }
+
+        .dune {
+            position: absolute;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 40px solid var(--ground-dark);
+            opacity: 0.5;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           MAPA BACKGROUND
+        ═══════════════════════════════════════════════════════════════════ */
+        .map-container {
+            position: relative;
             width: 100%;
-            height: 350px;
-            overflow: visible;
+            height: 450px;
+            background-image: url('/static/img/mapa_mes1_estrada.png');
+            /* Caminho da imagem */
+            background-size: 100% 100%;
+            background-position: center;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            cursor: crosshair;
+            /* Para identificar o modo debug */
         }
 
-        .path-border {
-            fill: none;
-            stroke: var(--path-border);
-            stroke-width: 32;
-            stroke-linecap: square;
-        }
 
-        .path-main {
-            fill: none;
-            stroke: var(--path);
-            stroke-width: 26;
-            stroke-linecap: square;
-        }
 
-        .path-detail {
-            fill: none;
-            stroke: rgba(255, 255, 255, 0.2);
-            stroke-width: 4;
-            stroke-dasharray: 8 16;
-        }
-
-        /* ═══════════════════════════════════════════════════════════════════
-           STEP NODES
-        ═══════════════════════════════════════════════════════════════════ */
         .step-node {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            transform: translate(-50%, -50%);
+            /* Centraliza no ponto X,Y */
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 0 #000;
+            z-index: 50;
         }
 
         .step-node:hover {
-            transform: scale(1.15);
-        }
-
-        .step-node.locked {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .step-node.locked:hover {
-            transform: none;
+            transform: translate(-50%, -60%) scale(1.1);
+            z-index: 60;
         }
 
         .step-node.current {
-            animation: stepPulse 0.5s steps(2) infinite;
+            background: var(--gold);
+            box-shadow: 0 0 20px var(--gold);
+            animation: pulseNode 2s infinite;
+            color: #000;
         }
 
-        @keyframes stepPulse {
+        .step-node.completed {
+            background: #4ade80;
+            color: #000;
+        }
 
-            0%,
-            100% {
-                filter: brightness(1);
+        .step-node.locked {
+            background: #555;
+            border-color: #888;
+            opacity: 0.8;
+            cursor: not-allowed;
+        }
+
+        @keyframes pulseNode {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
             }
 
-            50% {
-                filter: brightness(1.4) drop-shadow(0 0 10px var(--accent));
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 215, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+            }
+        }
+
+        .avatar-container {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+            z-index: 100;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Movimento Fluido */
+            transform: translate(-50%, -80%);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.5));
+            animation: avatarFloat 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes avatarFloat {
+            from {
+                transform: translateY(0);
+            }
+
+            to {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Debug info */
+        #debug-coords {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #0f0;
+            padding: 5px 10px;
+            font-family: monospace;
+            z-index: 9999;
+            pointer-events: none;
+            border: 1px solid #0f0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           CASTELO IMPERIAL (SVG Inline)
+        ═══════════════════════════════════════════════════════════════════ */
+        .castle-group {
+            transform-origin: bottom center;
+            filter: drop-shadow(5px 5px 0 rgba(0, 0, 0, 0.3));
+        }
+
+        .castle-window {
+            fill: #4a3728;
+            animation: windowLight 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes windowLight {
+            from {
+                fill: #4a3728;
+            }
+
+            to {
+                fill: #ffd700;
+            }
+
+            /* Luz Amarela Pulsante */
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           STEPS (NODES)
+        ═══════════════════════════════════════════════════════════════════ */
+        .step-group {
+            cursor: pointer;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .step-group:hover {
+            transform: scale(1.1);
+        }
+
+        .step-group.locked {
+            filter: grayscale(1) opacity(0.7);
+            cursor: not-allowed;
+        }
+
+        .step-group.locked:hover {
+            transform: none;
+        }
+
+        .step-bg {
+            fill: var(--gold);
+            stroke: #fff;
+            stroke-width: 4;
+        }
+
+        .step-icon {
+            font-size: 24px;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: #fff;
+            text-shadow: 2px 2px 0 #000;
+            font-family: 'Segoe UI Emoji', sans-serif;
+        }
+
+        /* Brilho Estável (Não pulsante na tela toda) */
+        .step-glint {
+            animation: glintSwipe 3s infinite linear;
+            opacity: 0.5;
+        }
+
+        @keyframes glintSwipe {
+            0% {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translateX(100%);
+            }
+
+            100% {
+                opacity: 0;
+                trasform: translateX(100%);
             }
         }
 
         /* ═══════════════════════════════════════════════════════════════════
-           DRAWER
+           AVATAR (Performance)
+        ═══════════════════════════════════════════════════════════════════ */
+        .avatar-group {
+            will-change: transform;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Slide suave */
+            pointer-events: none;
+        }
+
+        .avatar-body {
+            animation: avatarBreathe 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes avatarBreathe {
+            from {
+                transform: scaleY(1);
+            }
+
+            to {
+                transform: scaleY(1.05);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           DRAWER (Lateral)
         ═══════════════════════════════════════════════════════════════════ */
         .drawer-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
             opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s;
+            pointer-events: none;
+            transition: opacity 0.3s;
         }
 
         .drawer-overlay.active {
             opacity: 1;
-            visibility: visible;
+            pointer-events: auto;
         }
 
         .drawer {
             position: fixed;
-            right: 0;
             top: 0;
-            height: 100%;
-            width: 100%;
-            max-width: 400px;
-            background: linear-gradient(180deg, #228b22 0%, #1a6b1a 100%);
-            border-left: 4px solid #0a3a0a;
-            z-index: 2001;
+            right: 0;
+            bottom: 0;
+            width: 400px;
+            background: #222;
+            border-left: 4px solid var(--gold);
             transform: translateX(100%);
-            transition: transform 0.2s;
-            overflow-y: auto;
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
         }
 
         .drawer.active {
@@ -327,365 +501,363 @@
         }
 
         .drawer-header {
-            padding: 20px;
-            background: var(--accent);
-            border-bottom: 4px solid rgba(0, 0, 0, 0.3);
-        }
-
-        .drawer-title {
-            font-size: 12px;
+            background: var(--gold);
             color: #000;
-            text-shadow: none;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .drawer-close {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            width: 32px;
-            height: 32px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 3px solid #fff;
-            color: #fff;
-            font-size: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
             cursor: pointer;
         }
 
-        .drawer-body {
+        .drawer-content {
             padding: 20px;
-        }
-
-        .info-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 3px solid #fff;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .info-card h3 {
-            font-size: 10px;
-            color: var(--gold);
-            margin-bottom: 10px;
-            text-shadow: 1px 1px 0 #000;
-        }
-
-        .info-card p {
-            font-size: 12px;
             color: #fff;
-            line-height: 1.8;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .xp-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            background: var(--gold);
-            border: 3px solid #fff;
-            box-shadow: 3px 3px 0 #000;
-            font-size: 10px;
-            color: #000;
-            margin-bottom: 15px;
+            overflow-y: auto;
+            font-family: sans-serif;
         }
 
         .btn-submit {
             width: 100%;
             padding: 15px;
             background: var(--mindhub-red);
-            border: 4px solid #fff;
-            box-shadow: 4px 4px 0 #000;
-            font-family: inherit;
-            font-size: 10px;
             color: #fff;
+            border: 4px solid #fff;
+            font-family: 'Press Start 2P';
             cursor: pointer;
-            text-shadow: 2px 2px 0 #000;
+            margin-top: 20px;
         }
 
         .btn-submit:hover {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0 #000;
-        }
-
-        .form-field {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 3px solid #fff;
-            color: #fff;
-            font-size: 14px;
-            font-family: 'Segoe UI', sans-serif;
-            margin-bottom: 12px;
-        }
-
-        /* ═══════════════════════════════════════════════════════════════════
-           IA BUTTON
-        ═══════════════════════════════════════════════════════════════════ */
-        .ia-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background: var(--mindhub-red);
-            border: 4px solid #fff;
-            box-shadow: 4px 4px 0 #000;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 1500;
-        }
-
-        .ia-btn:hover {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0 #000;
+            transform: scale(1.02);
         }
 
         /* Responsivo */
-        @media (max-width: 768px) {
-            .page-title {
-                font-size: 11px;
+        @media(max-width: 768px) {
+            .drawer {
+                width: 100%;
             }
 
-            .trilha-svg {
-                height: 280px;
+            /* Fix Mapa Mobile */
+            .map-container {
+                height: 200px;
+            }
+
+            .step-node {
+                width: 18px;
+                height: 18px;
+                font-size: 8px;
+                border: 1px solid #fff;
+            }
+
+            .avatar-container {
+                width: 30px;
+                height: 30px;
             }
         }
     </style>
 </head>
 
+<body data-theme="{{ mes.numero }}">
 
-<!-- HUD -->
-<header class="hud">
-    <div class="hud-left">
-        <a href="{% url 'trilha:home_trilha' %}" class="btn-voltar">
-            ◄ VOLTAR
-        </a>
-        <span class="mes-badge">MÊS {{ mes.numero }}</span>
+    <!-- HUD (z-100) -->
+    <nav class="hud layer-hud">
+        <div class="hud-left">
+            <a href="{% url 'trilha:home_trilha' %}" class="btn-voltar">◄ VOLTAR</a>
+            <span class="mes-badge">{{ mes.nome }}</span>
+        </div>
+        <div class="hud-right">
+            <span>XP: <span id="xp-display">0</span></span>
+        </div>
+    </nav>
+
+    <!-- MAIN SCENE -->
+    <div class="scene-container">
+        <!-- WRAPPER COM BACKGROUND IMAGE -->
+        <!-- =================================================================
+             SEÇÃO: MAPA INTERATIVO
+             Imagem de fundo com steps sobrepostos
+             ================================================================= -->
+        <div class="map-container" id="map-area" onclick="logCoordinates(event)">
+
+            <!-- CAMADA DE STEPS (Nós da Trilha) -->
+            <div id="steps-layer"></div>
+
+            <!-- AVATAR -->
+            <div id="avatar-container" class="avatar-container">
+                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed={{ usuario.username }}" class="avatar-img">
+            </div>
+
+            <!-- DEBUG INFO -->
+            <div id="debug-coords">Click map to get X,Y</div>
+        </div>
     </div>
-    <div class="hud-right">
-        <span class="stat">⭐ <span id="xp">0</span> XP</span>
-        <span class="stat">📊 <span id="progress">0/0</span></span>
-    </div>
-</header>
 
-<!-- Map -->
-<main class="map-container">
-    <h1 class="page-title">{{ mes.nome }}</h1>
+    <!-- DRAWER (z-200) -->
+    <div class="drawer-overlay layer-drawer" id="overlay"></div>
+    <aside class="drawer layer-drawer" id="drawer">
+        <header class="drawer-header">
+            <h2 id="drawer-title">ETAPA X</h2>
+            <button class="drawer-close" onclick="closeDrawer()">×</button>
+        </header>
+        <div class="drawer-content" id="drawer-body">
+            <!-- Conteúdo dinâmico -->
+        </div>
+    </aside>
 
-    <div class="island">
-        <svg id="trilha-svg" class="trilha-svg" viewBox="0 0 1000 350">
-            <!-- Será renderizado via JS -->
-        </svg>
-    </div>
-</main>
+    <script>
+        // DADOS
+        const STEPS = {{ steps_json| safe }};
+        const ALUNO_ID = {{ usuario.id }};
 
-<!-- Drawer -->
-<div class="drawer-overlay" id="overlay"></div>
-<aside class="drawer" id="drawer">
-    <div class="drawer-header">
-        <span class="drawer-title" id="drawer-title">ETAPA</span>
-        <button class="drawer-close" onclick="closeDrawer()">×</button>
-    </div>
-    <div class="drawer-body" id="drawer-body"></div>
-</aside>
+        // CONFIG
+        // Agora usamos pos_x e pos_y do banco de dados (Step model)
 
-<!-- IA Button -->
-<button class="ia-btn" onclick="alert('🧠 MindLink - Mês {{ mes.numero }}')">🧠</button>
-
-<script>
-    const MES_ID = {{ mes.id }};
-    const MES_NUMERO = {{ mes.numero }};
-    const STEPS_DATA = {{ steps_json| safe }};
-
-    let avatarNode = null;
-
-    // Ícones por status
-    const STATUS_CONFIG = {
-        'BLOQUEADO': { fill: '#555', border: '#333', icon: '🔒' },
-        'EM_ANDAMENTO': { fill: '#ffd700', border: '#daa520', icon: '🎯' },
-        'CONCLUIDO': { fill: '#4ade80', border: '#22c55e', icon: '✓' },
-        'PENDENTE_VALIDACAO': { fill: '#fbbf24', border: '#f59e0b', icon: '⏳' }
-    };
-
-    function renderTrilha() {
-        const svg = document.getElementById('trilha-svg');
-        const stepCount = STEPS_DATA.length || 1;
-
-        // Calcular pontos
-        const startX = 80;
-        const endX = 920;
-        const availableWidth = endX - startX;
-        const points = [];
-
-        for (let i = 0; i < stepCount; i++) {
-            const x = startX + (availableWidth / (stepCount + 1)) * (i + 1);
-            const y = i % 2 === 0 ? 120 : 230;
-            points.push({ x, y });
+        // RENDERIZAÇÃO
+        function init() {
+            renderSteps();
+            // Pequeno delay para garantir que o DOM renderizou
+            setTimeout(moveAvatarToCurrent, 200);
+            updateStats();
         }
 
-        // Construir path
-        let pathD = `M ${startX},175`;
-        points.forEach((pt, i) => {
-            if (i === 0) {
-                pathD += ` Q ${startX + 30},175 ${pt.x},${pt.y}`;
-            } else {
-                const prev = points[i - 1];
-                const midX = (prev.x + pt.x) / 2;
-                pathD += ` Q ${midX},${prev.y} ${midX},175 Q ${midX},${pt.y} ${pt.x},${pt.y}`;
+        // PONTOS DA ESTRADA (Gabarito da Imagem)
+        const ROAD_POINTS = [
+            { x: 7, y: 79 },   // 0
+            { x: 12, y: 60 },  // 1
+            { x: 16, y: 52 },  // 2
+            { x: 27, y: 54 },  // 3
+            { x: 38, y: 69 },  // 4
+            { x: 49, y: 49 },  // 5
+            { x: 53, y: 42 },  // 6
+            { x: 61, y: 40 },  // 7
+            { x: 67, y: 51 },  // 8
+            { x: 71, y: 63 },  // 9
+            { x: 82, y: 70 }   // 10 (Fim Obrigatório)
+        ];
+
+        function getStepPosition(index, totalSteps) {
+            // Se tem coordenada forçada no banco, usa ela (permite override manual)
+            const step = STEPS[index];
+            if (step.pos_x && step.pos_y) {
+                return { x: step.pos_x, y: step.pos_y };
             }
-        });
-        const lastPt = points[points.length - 1] || { x: startX, y: 175 };
-        pathD += ` Q ${lastPt.x + 50},${lastPt.y} ${endX},175`;
 
-        let html = `
-                <path d="${pathD}" class="path-border"/>
-                <path d="${pathD}" class="path-main"/>
-                <path d="${pathD}" class="path-detail"/>
-            `;
+            // Lógica de Distribuição Linear Perfeita
+            const totalPoints = ROAD_POINTS.length; // 11
 
-        // Renderizar steps
-        STEPS_DATA.forEach((step, i) => {
-            const pt = points[i];
-            if (!pt) return;
+            // Evita divisão por zero
+            if (totalSteps <= 1) return ROAD_POINTS[0];
 
-            const config = STATUS_CONFIG[step.status] || STATUS_CONFIG['BLOQUEADO'];
-            const isLocked = step.status === 'BLOQUEADO';
-            const isCurrent = step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO';
+            // Fórmula Simples: Espaçamento igual em toda a extensão
+            // Para 6 steps (idx 0..5):
+            // i=0 -> 0 * 10/5 = 0
+            // i=1 -> 1 * 10/5 = 2
+            // i=2 -> 2 * 10/5 = 4
+            // ...
+            // i=5 -> 5 * 10/5 = 10 (Perfeito 82,70)
+            const ratio = (totalPoints - 1) / (totalSteps - 1);
+            const pointIndex = Math.round(index * ratio);
 
-            html += `
-                    <g class="step-node ${isLocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}" 
-                       transform="translate(${pt.x}, ${pt.y})"
-                       onclick="${!isLocked ? `openDrawer(${step.id})` : ''}">
-                        <rect x="-28" y="-28" width="56" height="56" fill="${config.fill}" stroke="${config.border}" stroke-width="4"/>
-                        <rect x="-24" y="-24" width="48" height="48" fill="${config.fill}"/>
-                        <rect x="-22" y="-22" width="10" height="10" fill="rgba(255,255,255,0.3)"/>
-                        <text text-anchor="middle" dominant-baseline="central" font-size="22" fill="#fff" style="text-shadow:2px 2px 0 #000">${config.icon}</text>
-                        <text y="50" text-anchor="middle" font-size="11" fill="#fff" font-family="'Press Start 2P'" style="text-shadow:2px 2px 0 #000">${step.ordem}</text>
-                    </g>
-                `;
-
-            if (isCurrent) {
-                avatarNode = { x: pt.x, y: pt.y - 50 };
-            }
-        });
-
-        // Avatar
-        if (avatarNode) {
-            html += `
-                    <g transform="translate(${avatarNode.x}, ${avatarNode.y})">
-                        <g style="animation: avatarBounce 0.6s ease-in-out infinite;">
-                            <ellipse cx="0" cy="35" rx="12" ry="4" fill="rgba(0,0,0,0.3)"/>
-                            <rect x="-10" y="5" width="20" height="28" fill="#fff" stroke="#ddd" stroke-width="2"/>
-                            <rect x="-2" y="10" width="4" height="4" fill="#333"/>
-                            <rect x="-2" y="18" width="4" height="4" fill="#333"/>
-                            <rect x="-12" y="-15" width="24" height="22" fill="#ffd5c8" stroke="#e8c4b8" stroke-width="2"/>
-                            <rect x="-8" y="-10" width="5" height="5" fill="#333"/>
-                            <rect x="3" y="-10" width="5" height="5" fill="#333"/>
-                            <rect x="-14" y="-28" width="28" height="14" fill="#fff" stroke="#ddd" stroke-width="1"/>
-                            <rect x="-10" y="-36" width="20" height="10" fill="#fff" stroke="#ddd" stroke-width="1"/>
-                            <rect x="-8" y="33" width="6" height="8" fill="#333"/>
-                            <rect x="2" y="33" width="6" height="8" fill="#333"/>
-                        </g>
-                    </g>
-                    <style>
-                        @keyframes avatarBounce {
-                            0%, 100% { transform: translateY(0); }
-                            50% { transform: translateY(-8px); }
-                        }
-                    </style>
-                `;
+            return ROAD_POINTS[pointIndex] || ROAD_POINTS[0];
         }
 
-        svg.innerHTML = html;
+        function renderSteps() {
+            const layer = document.getElementById('steps-layer');
+            let html = '';
+            const totalSteps = STEPS.length;
 
-        // Atualizar progresso
-        const concluidos = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').length;
-        document.getElementById('progress').textContent = `${concluidos}/${STEPS_DATA.length}`;
-        document.getElementById('xp').textContent = STEPS_DATA.filter(s => s.status === 'CONCLUIDO').reduce((sum, s) => sum + s.pontos, 0);
-    }
+            STEPS.forEach((step, index) => {
+                const coord = getStepPosition(index, totalSteps);
 
-    async function openDrawer(stepId) {
-        try {
-            const res = await fetch(`/api/aluno/step/${stepId}/`);
-            const data = await res.json();
+                let classes = 'step-node';
+                let icon = '🔒';
 
-            document.getElementById('drawer-title').textContent = `ETAPA ${data.ordem}`;
+                // Conteúdo do Step
+                let innerContent = icon;
 
-            let html = `
-                    <div class="info-card">
-                        <h3>📜 MISSÃO</h3>
-                        <p>${data.instrucoes || 'Complete esta etapa!'}</p>
+                if (step.status === 'CONCLUIDO') {
+                    classes += ' completed';
+                    icon = '🚩';
+                    innerContent = icon;
+                } else if (step.status === 'EM_ANDAMENTO' || step.status === 'PENDENTE_VALIDACAO') {
+                    classes += ' current';
+                    icon = '⚔️';
+                    innerContent = icon;
+                } else {
+                    classes += ' locked';
+                    // Mostra número se bloqueado
+                    innerContent = `<span style="font-family:sans-serif; font-weight:bold;">${index + 1}</span>`;
+                }
+
+                html += `
+                    <div class="${classes}" 
+                         style="left: ${coord.x}%; top: ${coord.y}%;"
+                         onclick="openDrawer(${step.id})"
+                         title="${step.titulo}">
+                         ${innerContent}
                     </div>
-                    <div class="xp-badge">⭐ +${data.pontos || 10} XP</div>
+                `;
+            });
+
+            layer.innerHTML = html;
+        }
+
+        function moveAvatarToCurrent() {
+            // Lógica para encontrar onde o avatar deve estar
+            let currentStep = STEPS.find(s => s.status === 'EM_ANDAMENTO' || s.status === 'PENDENTE_VALIDACAO');
+            let stepIndex = -1;
+
+            if (!currentStep) {
+                // Se tudo concluído, vai para o último
+                const completed = STEPS.filter(s => s.status === 'CONCLUIDO');
+                if (completed.length > 0) {
+                    currentStep = completed[completed.length - 1];
+                    stepIndex = STEPS.indexOf(currentStep);
+                } else {
+                    // Se nada começou, vai para o primeiro
+                    currentStep = STEPS[0];
+                    stepIndex = 0;
+                }
+            } else {
+                stepIndex = STEPS.indexOf(currentStep);
+            }
+
+            if (!currentStep) return;
+
+            let targetX = currentStep.pos_x;
+            let targetY = currentStep.pos_y;
+
+            // Fallback se coords forem 0 (ainda não configurado no debug)
+            if (!targetX && !targetY) {
+                targetX = 10 + (stepIndex * 15);
+                targetY = 50;
+            }
+
+            const avatar = document.getElementById('avatar-container');
+            if (avatar) {
+                avatar.style.left = targetX + '%';
+                avatar.style.top = targetY + '%';
+            }
+        }
+
+        // DEBUG MODE - Click to get Coordinates
+        function logCoordinates(event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Converter para porcentagem
+            const perX = Math.round((x / rect.width) * 100);
+            const perY = Math.round((y / rect.height) * 100);
+
+            const msg = `POS_X: ${perX}, POS_Y: ${perY}`;
+            document.getElementById('debug-coords').innerText = msg;
+            console.log(msg);
+
+            // Opcional: Copiar para clipboard
+            navigator.clipboard.writeText(`${perX}, ${perY}`);
+            // alert(`Copiado: ${perX}, ${perY}`);
+        }
+
+        function updateStats() {
+            const xp = STEPS.filter(s => s.status === 'CONCLUIDO').reduce((a, b) => a + b.pontos, 0);
+            document.getElementById('xp-display').textContent = xp;
+        }
+
+        // DRAWER LOGIC
+        window.openDrawer = async (stepId) => {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            const body = document.getElementById('drawer-body');
+            const title = document.getElementById('drawer-title');
+
+            body.innerHTML = '<p>Carregando...</p>';
+            drawer.classList.add('active');
+            overlay.classList.add('active');
+
+            try {
+                const res = await fetch(`/api/aluno/step/${stepId}/`);
+                const data = await res.json();
+
+                title.textContent = `ETAPA ${data.ordem}: ${data.titulo}`;
+
+                let content = `
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color:var(--gold); margin-bottom:10px;">📜 MISSÃO</h3>
+                        <p style="line-height:1.6;">${data.instrucoes}</p>
+                    </div>
                 `;
 
-            if (data.feedback_anterior) {
-                html += `<div class="info-card" style="border-color:#ff4444"><h3>⚠️ REFAZER</h3><p>${data.feedback_anterior}</p></div>`;
+                if (data.status === 'EM_ANDAMENTO') {
+                    content += `
+                        <form onsubmit="submitStep(event)">
+                            <input type="hidden" name="step_id" value="${data.id}">
+                            ${data.tipo_validacao === 'FOTO' ?
+                            '<label>Envie uma foto da sua tarefa:</label><input class="btn-submit" style="background:#333; margin-top:5px;" type="file" name="arquivo" required>' :
+                            '<textarea name="resposta_texto" style="width:100%; padding:10px; height:100px; margin-top:10px;" placeholder="Digite sua resposta..." required></textarea>'}
+                            <button type="submit" class="btn-submit">🚀 ENVIAR RESPOSTA</button>
+                        </form>
+                     `;
+                } else if (data.status === 'PENDENTE_VALIDACAO') {
+                    content += `<div style="padding:20px; background:#ffd700; color:#000; text-align:center;">⏳ AGUARDANDO APROVAÇÃO</div>`;
+                } else if (data.status === 'CONCLUIDO') {
+                    content += `<div style="padding:20px; background:#4ade80; color:#000; text-align:center;">✅ ETAPA CONCLUÍDA! (+${data.pontos} XP)</div>`;
+                }
+
+                body.innerHTML = content;
+
+            } catch (e) {
+                body.innerHTML = '<p>Erro ao carregar.</p>';
             }
+        };
 
-            if (data.status === 'EM_ANDAMENTO') {
-                const input = data.tipo_validacao === 'FOTO'
-                    ? `<input type="file" name="arquivo" accept="image/*" class="form-field" required>`
-                    : `<textarea name="resposta_texto" rows="4" class="form-field" placeholder="Sua resposta..." required></textarea>`;
-                html += `<form onsubmit="submitStep(event,${data.id})"><input type="hidden" name="step_id" value="${data.id}">${input}<button type="submit" class="btn-submit">🚀 ENVIAR</button></form>`;
-            } else if (data.status === 'PENDENTE_VALIDACAO') {
-                html += `<div class="info-card"><h3>⏳ AGUARDANDO</h3><p>O mentor está avaliando...</p></div>`;
-            } else if (data.status === 'CONCLUIDO') {
-                html += `<div class="info-card" style="border-color:#22c55e"><h3>✅ APROVADO!</h3><p>+${data.pontos || 10} XP conquistados!</p></div>`;
-            }
+        window.submitStep = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const btn = form.querySelector('button');
+            const fd = new FormData(form);
 
-            document.getElementById('drawer-body').innerHTML = html;
-            document.getElementById('drawer').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        } catch (e) { console.error(e); }
-    }
+            btn.textContent = 'Enviando...';
+            btn.disabled = true;
 
-    function closeDrawer() {
-        document.getElementById('drawer').classList.remove('active');
-        document.getElementById('overlay').classList.remove('active');
-    }
+            try {
+                const r = await fetch('/api/aluno/submeter/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: fd
+                });
+                if (r.ok) {
+                    closeDrawer();
+                    window.location.reload();
+                } else {
+                    alert('Erro ao enviar.');
+                    btn.disabled = false;
+                }
+            } catch (err) { alert('Erro de conexão'); btn.disabled = false; }
+        };
 
-    document.getElementById('overlay').addEventListener('click', closeDrawer);
+        window.closeDrawer = () => {
+            document.getElementById('drawer').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        };
 
-    async function submitStep(e, id) {
-        e.preventDefault();
-        const form = e.target;
-        const fd = new FormData(form);
-        const btn = form.querySelector('button');
-        btn.textContent = '⏳...';
-        btn.disabled = true;
-
-        try {
-            const r = await fetch('/api/aluno/submeter/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: fd
-            });
-            if (r.ok) {
-                closeDrawer();
-                window.location.reload();
-            } else {
-                const d = await r.json();
-                alert('Erro: ' + (d.error || 'Tente novamente'));
-                btn.textContent = '🚀 ENVIAR';
-                btn.disabled = false;
-            }
-        } catch (err) {
-            alert('Erro de conexão');
-            btn.textContent = '🚀 ENVIAR';
-            btn.disabled = false;
+        function getCookie(name) {
+            let value = "; " + document.cookie;
+            let parts = value.split("; " + name + "=");
+            if (parts.length == 2) return parts.pop().split(";").shift();
         }
-    }
 
-    function getCookie(n) {
-        let v = null;
-        document.cookie.split(';').forEach(c => {
-            c = c.trim();
-            if (c.startsWith(n + '=')) v = decodeURIComponent(c.substring(n.length + 1));
-        });
-        return v;
-    }
+        // START
+        init();
 
-    document.addEventListener('DOMContentLoaded', renderTrilha);
-</script>
+    </script>
 </body>
 
 </html>

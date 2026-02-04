@@ -36,6 +36,25 @@ class EngineIA:
         self.embeddings = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
 
     def carregar_arquivos_recursivo(self, folder_id, path_nome="empresa"):
+        """
+        Percorre recursivamente uma pasta do Google Drive.
+        
+        Args:
+            folder_id (str): ID da pasta no Google Drive.
+            path_nome (str): Caminho legível para metadados (ex: "empresa/financeiro").
+            
+        Returns:
+            list: Lista de objetos Document (LangChain) prontos para indexação.
+            
+        Lógica:
+            1. Lista arquivos e subpastas via API.
+            2. Se for PASTA: chama a si mesmo recursivamente.
+            3. Se for ARQUIVO:
+               - Verifica extensão (.pdf, .docx, .xlsx, etc).
+               - Baixa para /tmp.
+               - Extrai texto (PDF/Word) ou tabelas (Excel).
+               - Cria Document com contexto do nome do arquivo.
+        """
         documentos_finais = []
         page_token = None
         
@@ -128,6 +147,19 @@ class EngineIA:
         return documentos_finais
 
     def inicializar_sistema(self):
+        """
+        Inicializa o sistema RAG (Retrieval-Augmented Generation).
+        
+        Lógica:
+            1. Carrega todos os arquivos da pasta raiz configurada.
+            2. Quebra textos em chunks (1500 chars).
+            3. Cria embeddings usando OpenAI.
+            4. Cria banco vetorial FAISS.
+            5. Configura a Chain de Conversação com prompt de Auditoria Técnica.
+            
+        Returns:
+            ConversationalRetrievalChain: Chain pronta para receber perguntas.
+        """
         documentos = self.carregar_arquivos_recursivo(PASTA_DRIVE_ID)
         chunks = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100).split_documents(documentos)
         vector_db = FAISS.from_documents(chunks, self.embeddings)
@@ -200,6 +232,30 @@ class EngineIA:
         )
 
     def editar_e_salvar_no_drive(self, file_id, nome_arquivo, comando_ia):
+        """
+        Aplica edições solicitadas pela IA diretamente no arquivo do Drive.
+        
+        Args:
+            file_id (str): ID do arquivo no Drive.
+            nome_arquivo (str): Nome original para determinar extensão.
+            comando_ia (str): Instrução técnica gerada pelo LLM (ex: `[AÇÃO: SUBSTITUIR...]`).
+            
+        Lógica:
+            1. Baixa o arquivo para /tmp.
+            2. Identifica o tipo (.docx ou .xlsx).
+            3. Word (.docx):
+               - [TOPO]: Insere no início.
+               - [SUBSTITUIR]: Regex simple replace.
+               - [INSERIR]: Procura âncora e insere após.
+            4. Excel (.xlsx):
+               - Busca célula por valor exato ou parcial.
+               - Usa 'CONTEXTO' (linha) para desambiguação.
+               - Preserva formatação numérica.
+            5. Upload: Sobrescreve o arquivo no Drive se houver mudanças.
+            
+        Returns:
+            bool: True se sucesso.
+        """
         try:
             ext = os.path.splitext(nome_arquivo)[1].lower()
             temp_path = os.path.join("/tmp", f"edit_{file_id}{ext}")

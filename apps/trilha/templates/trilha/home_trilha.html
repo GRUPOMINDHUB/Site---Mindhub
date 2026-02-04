@@ -85,8 +85,9 @@
             left: 0;
             right: 0;
             height: 60px;
-            background: linear-gradient(180deg, #228b22 0%, #1a6b1a 50%, #145214 100%);
-            border-bottom: 4px solid #0a3a0a;
+            height: 60px;
+            background: linear-gradient(180deg, #1a0f00 0%, #2d1810 50%, #4a2c1a 100%);
+            border-bottom: 4px solid var(--gold);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -275,10 +276,17 @@
         }
 
         .mes-name {
-            font-size: 12px;
+            font-size: 20px;
+            /* Aumentado */
             margin-bottom: 20px;
             text-shadow: 2px 2px 0 #000;
+            text-align: center;
+            /* Centralizado */
+            width: 100%;
+            display: block;
         }
+
+        /* ... (rest of CSS if any) ... */
 
         /* ═══════════════════════════════════════════════════════════════════
            CASTELO SVG - PIXEL ART HD
@@ -431,7 +439,7 @@
     <header class="hud">
         <div class="hud-left">
             <span class="logo">🍽️ MINDHUB</span>
-            <span class="title-badge">IMPÉRIO DOS MESES</span>
+            <span class="title-badge">SUA JORNADA NO PEG GAMIFICADA</span>
         </div>
         <div class="hud-right">
             <span class="stat">⭐ <span id="total-xp">0</span> XP</span>
@@ -441,12 +449,17 @@
 
     <!-- Main -->
     <main class="container">
-        <h1 class="page-title">👑 IMPÉRIO DOS MESES</h1>
-        <p class="page-subtitle">Escolha um restaurante para explorar</p>
+        <h1 class="page-title">👑 SUA JORNADA NO PEG GAMIFICADA</h1>
+        <p class="page-subtitle">CLIQUE EM UM CASTELO PRA VER AS TAREFAS</p>
 
+        <!-- =================================================================
+             SEÇÃO: GRID DE CASTELOS (MESES)
+             Renderiza os 6 cards de meses/castelos
+             ================================================================= -->
         <div class="meses-grid" id="meses-grid">
-            <!-- Meses serão renderizados aqui -->
+            <!-- Meses serão renderizados aqui via JavaScript -->
         </div>
+        <!-- FIM SEÇÃO CASTELOS -->
     </main>
 
     <!-- IA Button -->
@@ -458,16 +471,70 @@
 
         // Configuração visual dos 6 biomas
         const BIOMAS = {
-            1: { nome: 'DESERTO DE OURO', icon: '🏜️', colors: { main: '#d4a574', dark: '#b8944c', accent: '#ffd700' } },
-            2: { nome: 'REINO DOS DOCES', icon: '🍭', colors: { main: '#ff69b4', dark: '#c94277', accent: '#ffe4e1' } },
-            3: { nome: 'VALE DO SUSHI', icon: '🍣', colors: { main: '#dc143c', dark: '#8b0000', accent: '#00ced1' } },
-            4: { nome: 'METRÓPOLE BURGER', icon: '🍔', colors: { main: '#ff4500', dark: '#cc3700', accent: '#ffd700' } },
-            5: { nome: 'TOSCANA PIZZA', icon: '🍕', colors: { main: '#d4a574', dark: '#8b5a2b', accent: '#8b0000' } },
-            6: { nome: 'IMPÉRIO GOURMET', icon: '👑', colors: { main: '#ffd700', dark: '#b8860b', accent: '#c0c0c0' } }
+            1: { nome: 'Mês 1', icon: '🏜️', colors: { main: '#d4a574', dark: '#b8944c', accent: '#ffd700' } },
+            2: { nome: 'Mês 2', icon: '🏯', colors: { main: '#ff69b4', dark: '#c94277', accent: '#ffe4e1' } },
+            3: { nome: 'Mês 3', icon: '🍣', colors: { main: '#dc143c', dark: '#8b0000', accent: '#00ced1' } },
+            4: { nome: 'Mês 4', icon: '🍔', colors: { main: '#ff4500', dark: '#cc3700', accent: '#ffd700' } },
+            5: { nome: 'Mês 5', icon: '🍕', colors: { main: '#d4a574', dark: '#8b5a2b', accent: '#8b0000' } },
+            6: { nome: 'Mês 6', icon: '👑', colors: { main: '#ffd700', dark: '#b8860b', accent: '#c0c0c0' } }
         };
 
         // Renderiza um castelo em pixel art baseado no tema
         function renderCastelo(numero, status) {
+            // Mês 1 usa imagem customizada (Gemini Generated)
+            if (numero === 1) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes1.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
+            // Mês 2 usa imagem customizada (Gemini Generated - Castelo Oriental)
+            if (numero === 2) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes2.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
+            // Mês 3 usa imagem customizada (Gemini Generated - Castelo Sushi)
+            if (numero === 3) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes3.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
+            // Mês 4 usa imagem customizada (Gemini Generated - Castelo Mexicano)
+            if (numero === 4) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes4.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
+            // Mês 5 usa imagem customizada (Gemini Generated - Castelo Francês)
+            if (numero === 5) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes5.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
+            // Mês 6 usa imagem customizada (Gemini Generated - Castelo Chinês)
+            if (numero === 6) {
+                return `
+                    <div style="width: 100%; height: 200px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: 4px;">
+                        <img src="/static/img/castelo_mes6.jpg" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.0); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));">
+                    </div>
+                `;
+            }
+
             const bioma = BIOMAS[numero] || BIOMAS[1];
             const c = bioma.colors;
             const isCompleted = status === 'CONCLUIDO';
@@ -578,7 +645,7 @@
                             <div class="mes-number">${mes.numero}</div>
                             <span class="mes-status ${statusClass}">${statusText}</span>
                         </div>
-                        <div class="mes-name">${bioma.icon} ${mes.nome || bioma.nome}</div>
+                        <div class="mes-name">${bioma.nome}</div> <!-- NOME FIXADO AQUI (Sem Emoji) -->
                         <div class="castelo-container">
                             ${renderCastelo(mes.numero, mes.status)}
                             ${mes.status === 'ATUAL' ? renderAvatar() : ''}
