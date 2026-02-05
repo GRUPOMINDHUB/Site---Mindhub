@@ -240,7 +240,7 @@ def detalhe_mes(request, mes_id):
         },
         'steps': steps_data,
         'steps_json': json.dumps(steps_data),
-        'page_title': f'Mês {display_numero}: Mês {display_numero}'
+        'page_title': f'Mês {display_numero}'
     })
 
 

@@ -18,7 +18,7 @@ class Command(BaseCommand):
         mundos_data = [
             {
                 'numero': 1,
-                'nome': 'Fundamentos',
+                'nome': 'Mês 1',
                 'descricao': 'Aprenda os conceitos básicos de gestão de restaurante',
                 'icone': 'book',
                 'cor_primaria': '#e30613',
@@ -30,7 +30,7 @@ class Command(BaseCommand):
             },
             {
                 'numero': 2,
-                'nome': 'Finanças',
+                'nome': 'Mês 2',
                 'descricao': 'Domine o controle financeiro do seu negócio',
                 'icone': 'chart-line',
                 'cor_primaria': '#28a745',
@@ -43,7 +43,7 @@ class Command(BaseCommand):
             },
             {
                 'numero': 3,
-                'nome': 'Operações',
+                'nome': 'Mês 3',
                 'descricao': 'Otimize as operações do dia a dia',
                 'icone': 'cogs',
                 'cor_primaria': '#ffc107',
@@ -56,7 +56,7 @@ class Command(BaseCommand):
             },
             {
                 'numero': 4,
-                'nome': 'Equipe',
+                'nome': 'Mês 4',
                 'descricao': 'Desenvolva e gerencie sua equipe',
                 'icone': 'users',
                 'cor_primaria': '#17a2b8',
@@ -69,7 +69,7 @@ class Command(BaseCommand):
             },
             {
                 'numero': 5,
-                'nome': 'Marketing',
+                'nome': 'Mês 5',
                 'descricao': 'Atraia e fidelize clientes',
                 'icone': 'bullhorn',
                 'cor_primaria': '#6f42c1',
@@ -82,7 +82,7 @@ class Command(BaseCommand):
             },
             {
                 'numero': 6,
-                'nome': 'Escala',
+                'nome': 'Mês 6',
                 'descricao': 'Prepare seu negócio para crescer',
                 'icone': 'trophy',
                 'cor_primaria': '#fd7e14',
@@ -100,6 +100,7 @@ class Command(BaseCommand):
             
             mundo, created = Mundo.objects.update_or_create(
                 numero=mundo_data['numero'],
+                aluno=None,
                 defaults=mundo_data
             )
             

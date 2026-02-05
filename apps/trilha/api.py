@@ -654,16 +654,16 @@ def api_aluno_step_detalhe(request, step_id):
     except ProgressoAluno.DoesNotExist:
         status = StatusProgresso.BLOQUEADO
     
-    # Busca feedback anterior (se reprovado)
-    feedback_anterior = None
+    # Busca feedback (se houver, seja de aprovação ou reprovação recente)
+    feedback = None
     ultima_submissao = Submissao.objects.filter(
         progresso__aluno=aluno,
         progresso__step=step,
-        aprovado=False
-    ).order_by('-data_envio').first()
+        validado_por__isnull=False  # Apenas submissões validadas
+    ).exclude(feedback='').order_by('-data_envio').first()
     
     if ultima_submissao:
-        feedback_anterior = ultima_submissao.feedback
+        feedback = ultima_submissao.feedback
     
     return JsonResponse({
         'id': step.id,
@@ -678,7 +678,7 @@ def api_aluno_step_detalhe(request, step_id):
             'numero': step.mundo.numero,
             'nome': step.mundo.nome
         },
-        'feedback_anterior': feedback_anterior
+        'feedback': feedback
     })
 
 
@@ -1089,12 +1089,12 @@ def api_criar_trilha_vazia(request, aluno_id):
         return JsonResponse({'error': 'Aluno já possui trilha'}, status=400)
     
     nomes_mundos = [
-        'Deserto de Ouro',
-        'Reino dos Doces',
-        'Vale do Sushi',
-        'Metrópole Burger',
-        'Toscana Pizza',
-        'Império Gourmet'
+        'Mês 1',
+        'Mês 2',
+        'Mês 3',
+        'Mês 4',
+        'Mês 5',
+        'Mês 6'
     ]
     
     for i, nome in enumerate(nomes_mundos, start=1):
