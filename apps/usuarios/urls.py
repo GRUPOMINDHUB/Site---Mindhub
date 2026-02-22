@@ -9,9 +9,9 @@ app_name = 'usuarios'
 
 urlpatterns = [
     # Autenticação
-    path('', views.index, name='index'),
-    path('ia', views.ia_page, name='ia_page'),
-    path('login', views.login_endpoint, name='login'),
+    path('', views.landing_page, name='landing_page'),
+    path('login/', views.index, name='index'), # Login page (antiga index)
+    path('api/login', views.login_endpoint, name='login_endpoint'), # API Endpoint
     path('logout', views.logout, name='logout'),
     
     # Gestão de Acessos

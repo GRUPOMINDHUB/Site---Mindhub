@@ -14,10 +14,20 @@ import string
 from .models import Usuario, RoleChoices
 from .utils import get_usuario_logado
 
+def landing_page(request):
+    """
+    Rota: / (Landing Page)
+    Se logado -> Trilha. Senão -> Landing.
+    """
+    if get_usuario_logado(request):
+        return redirect('trilha:home_trilha')
+    return render(request, 'landing.html')
+
+
 def index(request):
     """
-    Rota: / (Flask)
-    Renderiza página de login
+    Rota: /login/
+    Renderiza página de login tradicional
     """
     return render(request, 'login.html')
 
