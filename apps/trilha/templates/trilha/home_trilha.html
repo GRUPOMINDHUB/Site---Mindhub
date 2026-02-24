@@ -24,14 +24,14 @@
 
         :root {
             --mindhub-red: #e30613;
-            --gold: #ffd700;
-            --gold-dark: #daa520;
+            --gold: #e30613;
+            --gold-dark: #8b0000;
         }
 
         body {
             font-family: 'Press Start 2P', cursive;
             min-height: 100vh;
-            background: linear-gradient(180deg, #1a0f00 0%, #2d1810 50%, #4a2c1a 100%);
+            background: linear-gradient(180deg, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
             overflow-x: hidden;
             color: #fff;
         }
@@ -43,9 +43,9 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(ellipse at 30% 20%, rgba(255, 200, 100, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 30%, rgba(255, 150, 50, 0.2) 0%, transparent 40%),
-                linear-gradient(180deg, #1a0a00 0%, #2d1810 40%, #4a2c1a 100%);
+                radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+                linear-gradient(180deg, #1e1e1e 0%, #121212 40%, #0a0a0a 100%);
             z-index: -3;
         }
 
@@ -85,15 +85,14 @@
             left: 0;
             right: 0;
             height: 60px;
-            height: 60px;
-            background: linear-gradient(180deg, #1a0f00 0%, #2d1810 50%, #4a2c1a 100%);
+            background: #1a1a1a;
             border-bottom: 4px solid var(--gold);
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
             z-index: 1000;
-            box-shadow: 0 4px 0 #0a3a0a, 0 8px 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 0 #000000, 0 8px 20px rgba(0, 0, 0, 0.5);
         }
 
         .hud-left {
@@ -471,12 +470,12 @@
 
         // Configuração visual dos 6 biomas
         const BIOMAS = {
-            1: { nome: 'Mês 1', icon: '🏜️', colors: { main: '#d4a574', dark: '#b8944c', accent: '#ffd700' } },
+            1: { nome: 'Mês 1', icon: '🏜️', colors: { main: '#d4a574', dark: '#b8944c', accent: '#e30613' } },
             2: { nome: 'Mês 2', icon: '🏯', colors: { main: '#ff69b4', dark: '#c94277', accent: '#ffe4e1' } },
             3: { nome: 'Mês 3', icon: '🍣', colors: { main: '#dc143c', dark: '#8b0000', accent: '#00ced1' } },
-            4: { nome: 'Mês 4', icon: '🍔', colors: { main: '#ff4500', dark: '#cc3700', accent: '#ffd700' } },
+            4: { nome: 'Mês 4', icon: '🍔', colors: { main: '#ff4500', dark: '#cc3700', accent: '#e30613' } },
             5: { nome: 'Mês 5', icon: '🍕', colors: { main: '#d4a574', dark: '#8b5a2b', accent: '#8b0000' } },
-            6: { nome: 'Mês 6', icon: '👑', colors: { main: '#ffd700', dark: '#b8860b', accent: '#c0c0c0' } }
+            6: { nome: 'Mês 6', icon: '👑', colors: { main: '#e30613', dark: '#8b0000', accent: '#c0c0c0' } }
         };
 
         // Renderiza um castelo em pixel art baseado no tema
@@ -538,8 +537,8 @@
             const bioma = BIOMAS[numero] || BIOMAS[1];
             const c = bioma.colors;
             const isCompleted = status === 'CONCLUIDO';
-            const mainColor = isCompleted ? '#ffd700' : c.main;
-            const darkColor = isCompleted ? '#daa520' : c.dark;
+            const mainColor = isCompleted ? '#e30613' : c.main;
+            const darkColor = isCompleted ? '#8b0000' : c.dark;
 
             return `
                 <svg class="castelo-svg" viewBox="0 0 200 140">
@@ -576,13 +575,13 @@
                     
                     <!-- Porta Principal -->
                     <rect x="85" y="95" width="30" height="40" rx="15" fill="#4a3728" stroke="#2a1a08" stroke-width="2"/>
-                    <circle cx="93" cy="115" r="3" fill="${isCompleted ? '#ffd700' : '#8b6914'}"/>
+                    <circle cx="93" cy="115" r="3" fill="${isCompleted ? '#e30613' : '#8b6914'}"/>
                     
                     <!-- Bandeiras -->
                     <line x1="37" y1="42" x2="37" y2="25" stroke="#5a3a1a" stroke-width="2"/>
-                    <polygon points="37,25 52,30 37,35" fill="${isCompleted ? '#ffd700' : '#cc0000'}"/>
+                    <polygon points="37,25 52,30 37,35" fill="${isCompleted ? '#e30613' : '#cc0000'}"/>
                     <line x1="163" y1="42" x2="163" y2="25" stroke="#5a3a1a" stroke-width="2"/>
-                    <polygon points="163,25 178,30 163,35" fill="${isCompleted ? '#ffd700' : '#cc0000'}"/>
+                    <polygon points="163,25 178,30 163,35" fill="${isCompleted ? '#e30613' : '#cc0000'}"/>
                     
                     <!-- Ícone do Bioma -->
                     <text x="100" y="85" text-anchor="middle" font-size="20">${bioma.icon}</text>

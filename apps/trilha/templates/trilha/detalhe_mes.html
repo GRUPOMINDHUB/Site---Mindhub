@@ -16,20 +16,21 @@
         :root {
             /* Cores Globais */
             --mindhub-red: #e30613;
-            --gold: #ffd700;
-            --gold-dark: #b8860b;
+            --gold: #e30613;
+            --gold-dark: #8b0000;
             --bg-dark: #121212;
 
-            /* Tema Ouro (Padrão) */
-            --bg-grad-start: #2c1e0f;
-            --bg-grad-end: #000000;
-            --border-light: #ffd700;
-            --border-dark: #8b4513;
-            --ground: #eecfa1;
-            --ground-dark: #cfaa70;
-            --path-fill: #daa520;
-            --path-border: #8b6914;
-            --accent: #ffd700;
+            /* Tema Ouro (Padrão) -> Tema Mindhub */
+            --bg-grad-start: #1e1e1e;
+            --bg-grad-end: #0a0a0a;
+            --border-light: #e30613;
+            --border-dark: #8b0000;
+            --ground: #1e1e1e;
+            /* Not fully requested, but golden ground makes little sense now. Let's make it greyish too #444? Well user said formatting is perfect, let's keep ground colors or change them since they are yellow? Let's keep it red. */
+            --ground-dark: #111111;
+            --path-fill: #e30613;
+            --path-border: #8b0000;
+            --accent: #e30613;
         }
 
         /* Temas Específicos */
@@ -38,11 +39,11 @@
         }
 
         [data-theme="2"] {
-            --bg-grad-start: #2a1015;
+            --bg-grad-start: #1e1e1e;
         }
 
         [data-theme="3"] {
-            --bg-grad-start: #0a102a;
+            --bg-grad-start: #1e1e1e;
         }
 
         * {
@@ -66,7 +67,7 @@
             border: 8px solid var(--border-light);
             box-shadow:
                 0 0 0 4px var(--border-dark),
-                0 0 20px rgba(255, 215, 0, 0.2);
+                0 0 20px rgba(227, 6, 19, 0.2);
             padding: 8px;
             background: #1a1a1a;
             position: relative;
@@ -131,8 +132,8 @@
         .step-card.status-EM_ANDAMENTO,
         .step-card.status-PENDENTE_VALIDACAO {
             border-color: var(--gold);
-            background: rgba(255, 215, 0, 0.1);
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            background: rgba(227, 6, 19, 0.1);
+            box-shadow: 0 0 10px rgba(227, 6, 19, 0.2);
             animation: cardPulse 2s infinite;
         }
 
@@ -494,10 +495,10 @@
             }
 
             to {
-                fill: #ffd700;
+                fill: #e30613;
             }
 
-            /* Luz Amarela Pulsante */
+            /* Luz Vermelha Pulsante */
         }
 
         /* ═══════════════════════════════════════════════════════════════════
@@ -971,7 +972,7 @@
                         </form>
                      `;
                     } else if (data.status === 'PENDENTE_VALIDACAO') {
-                        content += `<div style="padding:20px; background:#ffd700; color:#000; text-align:center;">⏳ AGUARDANDO APROVAÇÃO</div>`;
+                        content += `<div style="padding:20px; background:#e30613; color:#fff; text-align:center;">⏳ AGUARDANDO APROVAÇÃO</div>`;
                     } else if (data.status === 'CONCLUIDO') {
                         content += `<div style="padding:20px; background:#4ade80; color:#000; text-align:center;">✅ ETAPA CONCLUÍDA! (+${data.pontos} XP)</div>`;
 
