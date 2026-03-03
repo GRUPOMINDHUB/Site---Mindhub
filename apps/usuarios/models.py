@@ -132,11 +132,28 @@ class Usuario(models.Model):
         return None
     
     def get_step_atual(self):
-        """Retorna o step atual do aluno."""
-        from apps.trilha.models import ProgressoAluno, StatusProgresso
+        """Retorna o step atual do aluno ou o próximo disponível para avanço."""
+        from apps.trilha.models import ProgressoAluno, StatusProgresso, Step
+        
+        # 1. Primeiro busca o que já está em andamento ou aguardando validação
         progresso = ProgressoAluno.objects.filter(
             aluno=self,
             status__in=[StatusProgresso.EM_ANDAMENTO, StatusProgresso.PENDENTE_VALIDACAO]
         ).select_related('step').order_by('step__mundo__numero', 'step__ordem').first()
         
-        return progresso.step if progresso else None
+        if progresso:
+            return progresso.step
+            
+        # 2. Se não tem nada em andamento, busca o primeiro step que não foi concluído
+        concluidos_ids = ProgressoAluno.objects.filter(
+            aluno=self,
+            status=StatusProgresso.CONCLUIDO
+        ).values_list('step_id', flat=True)
+        
+        # Busca o próximo na trilha desse aluno
+        proximo = Step.objects.filter(
+            mundo__aluno=self,
+            ativo=True
+        ).exclude(id__in=concluidos_ids).order_by('mundo__numero', 'ordem').first()
+        
+        return proximo

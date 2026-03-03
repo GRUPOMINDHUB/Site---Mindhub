@@ -22,11 +22,21 @@
 
         <form class="login-form" id="login-form">
             <label class="login-label">E-mail</label>
-            <input type="email" class="input_login" id="email" placeholder="seu@email.com" autocomplete="email">
+            <input type="email" class="input_login" id="email" placeholder="seu@email.com" autocomplete="email"
+                required>
+
             <label class="login-label">Senha</label>
             <input type="password" class="input_login" id="password" placeholder="sua senha"
-                autocomplete="current-password">
-            <button type="button" class="input_btn" id="login_btn">Entrar</button>
+                autocomplete="current-password" required>
+
+            <div class="login-options">
+                <label class="show-password">
+                    <input type="checkbox" id="show-password-check"> Mostrar senha
+                </label>
+                <a href="#" class="forgot-password">Esqueci minha senha</a>
+            </div>
+
+            <button type="submit" class="input_btn" id="login_btn">Entrar</button>
         </form>
     </div>
 
@@ -34,12 +44,25 @@
         preload="auto"></audio>
 
     <script>
+        const form = document.querySelector('#login-form');
         const botao = document.querySelector('#login_btn');
         const som = document.querySelector('#login-sound');
+        const showPasswordCheck = document.querySelector('#show-password-check');
+        const passwordInput = document.querySelector('#password');
 
-        botao.addEventListener('click', async () => {
+        // Alternar visualização da senha
+        showPasswordCheck.addEventListener('change', () => {
+            passwordInput.type = showPasswordCheck.checked ? 'text' : 'password';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
             const email = document.querySelector('#email').value;
-            const senha = document.querySelector('#password').value;
+            const senha = passwordInput.value;
+
+            botao.disabled = true;
+            botao.innerText = 'Autenticando...';
 
             try {
                 const resposta = await fetch('/api/login/', {
@@ -66,10 +89,14 @@
                     setTimeout(() => { window.location.href = url; }, 1200);
                 } else {
                     alert(dados.mensagem || "Credenciais inválidas");
+                    botao.disabled = false;
+                    botao.innerText = 'Entrar';
                 }
             } catch (erro) {
                 console.error("Erro na requisição:", erro);
                 alert("Erro ao conectar com o servidor.");
+                botao.disabled = false;
+                botao.innerText = 'Entrar';
             }
         });
     </script>

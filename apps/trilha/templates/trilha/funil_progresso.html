@@ -5,10 +5,50 @@
 <div class="space-y-6 animate-fade-in relative">
 
     <!-- Cabeçalho -->
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-white mb-2">Torre de Controle</h1>
             <p class="text-gray-400 text-sm">Acompanhe o funil de progresso dos alunos e faça intervenções.</p>
+        </div>
+
+        <!-- Filtros Rápidos -->
+        <div
+            class="flex flex-wrap items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/10 w-full md:w-auto">
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-500 uppercase">Mês:</label>
+                <select id="filterMes" onchange="applyFilters()"
+                    class="bg-mindhub-dark border border-white/10 text-white text-xs rounded p-1.5 focus:ring-mindhub-red outline-none cursor-pointer">
+                    <option value="all">Todos</option>
+                    <option value="1">Mês 1</option>
+                    <option value="2">Mês 2</option>
+                    <option value="3">Mês 3</option>
+                    <option value="4">Mês 4</option>
+                    <option value="5">Mês 5</option>
+                    <option value="6">Mês 6</option>
+                    <option value="0">Sem Trilha</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-500 uppercase">Status:</label>
+                <select id="filterStatus" onchange="applyFilters()"
+                    class="bg-mindhub-dark border border-white/10 text-white text-xs rounded p-1.5 focus:ring-mindhub-red outline-none cursor-pointer">
+                    <option value="all">Todos</option>
+                    <option value="5">Saúde 5 (Verde)</option>
+                    <option value="4">Saúde 4</option>
+                    <option value="3">Saúde 3</option>
+                    <option value="2">Saúde 2</option>
+                    <option value="1">Saúde 1 (Crítico)</option>
+                </select>
+            </div>
+
+            <div class="h-6 w-px bg-white/10 mx-1"></div>
+
+            <div class="relative flex-1 md:w-48">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" id="filterSearch" onkeyup="applyFilters()" placeholder="Buscar aluno..."
+                    class="w-full bg-black/30 border border-white/5 text-white text-xs rounded pl-8 pr-3 py-1.5 focus:border-mindhub-red outline-none transition-colors">
+            </div>
         </div>
     </div>
 
@@ -18,18 +58,36 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-black/30 text-gray-400 text-xs uppercase tracking-wider">
-                        <th class="p-4 font-semibold">Aluno</th>
-                        <th class="p-4 font-semibold">Mês Atual</th>
-                        <th class="p-4 font-semibold">Step Atual</th>
-                        <th class="p-4 font-semibold w-48">Progresso</th>
-                        <th class="p-4 font-semibold text-center">Status</th>
+                        <th class="p-4 font-semibold cursor-pointer hover:text-white transition-colors"
+                            onclick="sortTable(0, 'string')">
+                            Aluno <i class="fas fa-sort ml-1 opacity-30"></i>
+                        </th>
+                        <th class="p-4 font-semibold cursor-pointer hover:text-white transition-colors"
+                            onclick="sortTable(1, 'number')">
+                            Mês Atual <i class="fas fa-sort ml-1 opacity-30"></i>
+                        </th>
+                        <th class="p-4 font-semibold cursor-pointer hover:text-white transition-colors"
+                            onclick="sortTable(2, 'string')">
+                            Step Atual <i class="fas fa-sort ml-1 opacity-30"></i>
+                        </th>
+                        <th class="p-4 font-semibold cursor-pointer hover:text-white transition-colors w-48"
+                            onclick="sortTable(3, 'number')">
+                            Progresso <i class="fas fa-sort ml-1 opacity-30"></i>
+                        </th>
+                        <th class="p-4 font-semibold cursor-pointer hover:text-white transition-colors text-center"
+                            onclick="sortTable(4, 'number')">
+                            Status <i class="fas fa-sort ml-1 opacity-30"></i>
+                        </th>
                         <th class="p-4 font-semibold text-right">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
                     {% for aluno in alunos %}
-                    <tr
-                        class="hover:bg-white/5 transition-colors {% if aluno.critico %}bg-mindhub-red/10 border-l-4 border-l-mindhub-red{% endif %}">
+                    <tr id="aluno-row-{{ aluno.id }}" data-sort-nome="{{ aluno.nome|lower }}"
+                        data-sort-mes="{{ aluno.mundo_atual.numero }}"
+                        data-sort-step="{{ aluno.step_atual.titulo|lower }}"
+                        data-sort-progresso="{{ aluno.progresso.porcentagem }}" data-sort-status="{{ aluno.nota }}"
+                        class="aluno-row hover:bg-white/5 transition-colors {% if aluno.critico %}bg-mindhub-red/10 border-l-4 border-l-mindhub-red{% endif %}">
 
                         <!-- Coluna Aluno -->
                         <td class="p-4">
@@ -134,7 +192,7 @@
 
 <!-- Drawer Lateral (Side Drawer) - Histórico do Aluno -->
 <div id="historicoDrawer"
-    class="fixed inset-y-0 right-0 max-w-md w-full bg-mindhub-dark shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 border-l border-white/10">
+    class="fixed inset-y-0 right-0 max-w-md w-full bg-mindhub-dark shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 border-l border-white/10 flex flex-col">
 
     <!-- Header do Drawer -->
     <div class="p-5 border-b border-white/10 bg-black/20">
@@ -160,36 +218,35 @@
             </select>
         </div>
     </div>
-    <p id="drawerAlunoNome" class="text-sm text-gray-400 mt-1">Carregando...</p>
-</div>
-<button onclick="closeHistoricoDrawer()" class="text-gray-400 hover:text-white transition-colors p-2">
-    <i class="fas fa-times text-xl"></i>
-</button>
-</div>
 
-<!-- Conteúdo do Drawer (Scrollable) -->
-<div class="p-5 overflow-y-auto h-[calc(100vh-85px)] custom-scrollbar" id="drawerContent">
-    <!-- Loader -->
-    <div id="drawerLoader" class="flex justify-center items-center py-10">
-        <i class="fas fa-circle-notch fa-spin text-mindhub-red text-2xl"></i>
-    </div>
+    <!-- Conteúdo do Drawer (Scrollable) -->
+    <div class="p-5 overflow-y-auto flex-1 custom-scrollbar" id="drawerContent">
+        <!-- Loader -->
+        <div id="drawerLoader" class="flex justify-center items-center py-10">
+            <i class="fas fa-circle-notch fa-spin text-mindhub-red text-2xl"></i>
+        </div>
 
-    <!-- Linha do Tempo -->
-    <div id="drawerTimeline" class="hidden relative border-l border-white/10 ml-3 space-y-6 pb-10">
-        <!-- Itens injetados via JS -->
-    </div>
+        <!-- Linha do Tempo -->
+        <div id="drawerTimeline" class="hidden relative border-l border-white/10 ml-3 space-y-6 pb-10">
+            <!-- Itens injetados via JS -->
+        </div>
 
-    <div id="drawerEmpty" class="hidden text-center text-gray-500 py-10">
-        <i class="fas fa-ghost text-4xl mb-3 opacity-20"></i>
-        <p>Nenhum histórico encontrado.</p>
+        <div id="drawerEmpty" class="hidden text-center text-gray-500 py-10">
+            <i class="fas fa-ghost text-4xl mb-3 opacity-20"></i>
+            <p>Nenhum histórico encontrado.</p>
+        </div>
     </div>
-</div>
 </div>
 
 <script>
     // --- LÓGICA DO PULO FORÇADO (GHOST SUBMISSION) ---
     async function forcarAvanco(alunoId, stepId, alunoNome) {
-        if (!confirm(`Tem certeza que deseja AVANÇAR MANUALMENTE o aluno ${alunoNome} neste step?\n\nIsso deixará um rastro de auditoria.`)) {
+        const motivo = prompt(`Você está prestes a AVANÇAR MANUALMENTE o aluno ${alunoNome}.\n\nPara fins de auditoria, descreva o motivo brevemente:`);
+
+        if (motivo === null) return; // Cancelou
+
+        if (motivo.trim().length < 5) {
+            alert('A justificativa deve ter pelo menos 5 caracteres.');
             return;
         }
 
@@ -203,10 +260,11 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Pegar token CSRF dos cookies se usar sessão normal, 
-                    // Mas a API tem @csrf_exempt
                 },
-                body: JSON.stringify({ step_id: parseInt(stepId) })
+                body: JSON.stringify({
+                    step_id: parseInt(stepId),
+                    motivo: motivo.trim()
+                })
             });
 
             const data = await response.json();
@@ -485,6 +543,80 @@
         drawer.classList.add('translate-x-full');
         overlay.classList.add('opacity-0', 'pointer-events-none');
     }
+    // --- LÓGICA DE ORDENAÇÃO DA TABELA ---
+    let currentSort = { column: -1, direction: 'asc' };
+
+    function sortTable(columnIndex, type) {
+        const tableBody = document.querySelector('tbody');
+        const rows = Array.from(tableBody.querySelectorAll('.aluno-row'));
+        const headers = document.querySelectorAll('th');
+
+        // Reset ícones
+        document.querySelectorAll('th i.fas').forEach(icon => {
+            icon.className = 'fas fa-sort ml-1 opacity-30';
+        });
+
+        // Alternar direção
+        if (currentSort.column === columnIndex) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.column = columnIndex;
+            currentSort.direction = 'asc';
+        }
+
+        // Atualizar ícone da coluna atual
+        const currentIcon = headers[columnIndex].querySelector('i');
+        currentIcon.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'} ml-1 text-mindhub-red opacity-100`;
+
+        // Definir chaves de ordenação com base no índice
+        const sortKeys = ['data-sort-nome', 'data-sort-mes', 'data-sort-step', 'data-sort-progresso', 'data-sort-status'];
+        const key = sortKeys[columnIndex];
+
+        rows.sort((a, b) => {
+            let valA = a.getAttribute(key);
+            let valB = b.getAttribute(key);
+
+            if (type === 'number') {
+                valA = parseFloat(valA) || 0;
+                valB = parseFloat(valB) || 0;
+            }
+
+            if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Reanexar linhas ordenadas
+        rows.forEach(row => tableBody.appendChild(row));
+    }
+
+    // --- LÓGICA DE FILTRAGEM ---
+    function applyFilters() {
+        const mesValue = document.getElementById('filterMes').value;
+        const statusValue = document.getElementById('filterStatus').value;
+        const searchValue = document.getElementById('filterSearch').value.toLowerCase();
+
+        const rows = document.querySelectorAll('.aluno-row');
+
+        rows.forEach(row => {
+            const rowMes = row.getAttribute('data-sort-mes');
+            const rowStatus = row.getAttribute('data-sort-status');
+            const rowNome = row.getAttribute('data-sort-nome');
+            const emailEl = row.querySelector('.text-gray-400');
+            const rowEmail = emailEl ? emailEl.textContent.toLowerCase() : '';
+
+            const matchMes = (mesValue === 'all' || rowMes === mesValue);
+            const matchStatus = (statusValue === 'all' || rowStatus === statusValue);
+            const matchSearch = (rowNome.includes(searchValue) || rowEmail.includes(searchValue));
+
+            if (matchMes && matchStatus && matchSearch) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    }
+
 </script>
 
 <style>

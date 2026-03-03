@@ -144,44 +144,46 @@ def api_monitor_aluno_detalhe(request, aluno_id):
     ).select_related('progresso__step').order_by('-data_envio')[:5]
     
     # NOVAS CHAVES PARA O DRAWER V2
-    # 1. Todos os Mundos ordenados
-    todos_mundos = list(Mundo.objects.filter(ativo=True).order_by('numero').values('id', 'numero', 'nome'))
+    # 1. Todos os Mundos ordenados deste aluno específico
+    mundos_aluno = Mundo.objects.filter(aluno=aluno, ativo=True).prefetch_related('steps').order_by('numero')
+    todos_mundos = list(mundos_aluno.values('id', 'numero', 'nome'))
     
-    # 2. Todas as submissões granulares do aluno indexadas
-    # Lista o histórico completo de envios agrupados pelos steps que o aluno logou progresso
-    progressos = ProgressoAluno.objects.filter(
-        aluno=aluno
-    ).select_related('step', 'step__mundo').prefetch_related('submissoes')
+    # 2. Mapa de progresso para busca rápida
+    progressos_map = {
+        p.step_id: p for p in ProgressoAluno.objects.filter(aluno=aluno).prefetch_related('submissoes')
+    }
     
     steps_auditoria = []
     
-    for prog in progressos:
-        # Pega a submissão mais recente deste progresso, se houver
-        sub = prog.submissoes.order_by('-data_envio').first()
-        
-        step_data = {
-            'progresso_id': prog.id,
-            'step_id': prog.step.id,
-            'titulo': prog.step.titulo,
-            'mundo_id': prog.step.mundo.id,
-            'mundo_numero': prog.step.mundo.numero,
-            'status_progresso': prog.status,
-            'submissao': None
-        }
-        
-        if sub:
-            step_data['submissao'] = {
-                'id': sub.id,
-                'data_envio': sub.data_envio.isoformat(),
-                'status': 'pendente' if sub.aprovado is None else ('aprovado' if sub.aprovado else 'reprovado'),
-                'feedback': sub.feedback,
-                'tipo_validacao': prog.step.tipo_validacao,
-                'arquivo': sub.arquivo.url if sub.arquivo else None,
-                'resposta_texto': sub.resposta_texto,
-                'resposta_formulario': sub.resposta_formulario
+    for mundo in mundos_aluno:
+        for step in mundo.steps.filter(ativo=True).order_by('ordem'):
+            prog = progressos_map.get(step.id)
+            status_progresso = prog.status if prog else StatusProgresso.BLOQUEADO
+            sub = prog.submissoes.order_by('-data_envio').first() if prog else None
+            
+            step_data = {
+                'progresso_id': prog.id if prog else None,
+                'step_id': step.id,
+                'titulo': step.titulo,
+                'mundo_id': mundo.id,
+                'mundo_numero': mundo.numero,
+                'status_progresso': status_progresso,
+                'submissao': None
             }
             
-        steps_auditoria.append(step_data)
+            if sub:
+                step_data['submissao'] = {
+                    'id': sub.id,
+                    'data_envio': sub.data_envio.isoformat(),
+                    'status': 'pendente' if sub.aprovado is None else ('aprovado' if sub.aprovado else 'reprovado'),
+                    'feedback': sub.feedback,
+                    'tipo_validacao': step.tipo_validacao,
+                    'arquivo': sub.arquivo.url if sub.arquivo else None,
+                    'resposta_texto': sub.resposta_texto,
+                    'resposta_formulario': sub.resposta_formulario
+                }
+                
+            steps_auditoria.append(step_data)
         
     return JsonResponse({
         'aluno': {
@@ -428,8 +430,13 @@ def api_monitor_forcar_avanco(request, aluno_id):
     try:
         data = json.loads(request.body)
         step_id = data.get('step_id')
+        motivo = data.get('motivo')
+        
         if not step_id:
             return JsonResponse({'error': 'step_id é obrigatório'}, status=400)
+        
+        if not motivo or len(motivo.strip()) < 5:
+            return JsonResponse({'error': 'Justificativa é obrigatória (mínimo 5 caracteres).'}, status=400)
     except Exception:
         return JsonResponse({'error': 'Dados inválidos'}, status=400)
         
@@ -450,12 +457,11 @@ def api_monitor_forcar_avanco(request, aluno_id):
     # Criar Submissão Fantasma (Auditoria Rigorosa)
     submissao = Submissao.objects.create(
         progresso=progresso,
-        resposta_texto=f"Avançado manualmente pelo monitor {monitor.email}",
-        # O método .aprovar() já vai setar aprovado=True, validado_por, etc.
+        resposta_texto=f"AVANÇO MANUAL ({monitor.email}): {motivo}",
     )
     
     # Executa a aprovação, o que também chama progresso.concluir() e avança o funil
-    submissao.aprovar(monitor, feedback="Avançado manualmente (Ghost Submission)")
+    submissao.aprovar(monitor, feedback=f"Avançado manualmente (Ghost Submission). Motivo: {motivo}")
     
     return JsonResponse({
         'success': True,
