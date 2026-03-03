@@ -138,11 +138,51 @@ def api_monitor_aluno_detalhe(request, aluno_id):
         aprovado__isnull=True
     ).select_related('progresso__step').order_by('-data_envio')
     
-    # Últimas atividades
+    # Últimas atividades para manter a rota antiga funcionando onde for usada
     ultimas_submissoes = Submissao.objects.filter(
         progresso__aluno=aluno
     ).select_related('progresso__step').order_by('-data_envio')[:5]
     
+    # NOVAS CHAVES PARA O DRAWER V2
+    # 1. Todos os Mundos ordenados
+    todos_mundos = list(Mundo.objects.filter(ativo=True).order_by('numero').values('id', 'numero', 'nome'))
+    
+    # 2. Todas as submissões granulares do aluno indexadas
+    # Lista o histórico completo de envios agrupados pelos steps que o aluno logou progresso
+    progressos = ProgressoAluno.objects.filter(
+        aluno=aluno
+    ).select_related('step', 'step__mundo').prefetch_related('submissoes')
+    
+    steps_auditoria = []
+    
+    for prog in progressos:
+        # Pega a submissão mais recente deste progresso, se houver
+        sub = prog.submissoes.order_by('-data_envio').first()
+        
+        step_data = {
+            'progresso_id': prog.id,
+            'step_id': prog.step.id,
+            'titulo': prog.step.titulo,
+            'mundo_id': prog.step.mundo.id,
+            'mundo_numero': prog.step.mundo.numero,
+            'status_progresso': prog.status,
+            'submissao': None
+        }
+        
+        if sub:
+            step_data['submissao'] = {
+                'id': sub.id,
+                'data_envio': sub.data_envio.isoformat(),
+                'status': 'pendente' if sub.aprovado is None else ('aprovado' if sub.aprovado else 'reprovado'),
+                'feedback': sub.feedback,
+                'tipo_validacao': prog.step.tipo_validacao,
+                'arquivo': sub.arquivo.url if sub.arquivo else None,
+                'resposta_texto': sub.resposta_texto,
+                'resposta_formulario': sub.resposta_formulario
+            }
+            
+        steps_auditoria.append(step_data)
+        
     return JsonResponse({
         'aluno': {
             'id': aluno.id,
@@ -194,9 +234,12 @@ def api_monitor_aluno_detalhe(request, aluno_id):
                 'id': s.id,
                 'step': s.progresso.step.titulo,
                 'data': s.data_envio.isoformat(),
-                'status': 'pendente' if s.aprovado is None else ('aprovado' if s.aprovado else 'reprovado')
+                'status': 'pendente' if s.aprovado is None else ('aprovado' if s.aprovado else 'reprovado'),
+                'feedback': s.feedback
             } for s in ultimas_submissoes
-        ]
+        ],
+        'todos_mundos': todos_mundos,
+        'steps_auditoria': steps_auditoria,
     })
 
 
@@ -360,6 +403,64 @@ def api_monitor_validar_submissao(request, submissao_id):
             'id': submissao.progresso.aluno.id,
             'step_status': submissao.progresso.status
         }
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_monitor_forcar_avanco(request, aluno_id):
+    """
+    POST /api/monitor/aluno/<aluno_id>/forcar-avanco/
+    Avança manualmente um aluno no seu step atual (Ghost Submission).
+    Body: {"step_id": 123}
+    """
+    monitor, error = verificar_monitor(request)
+    if error:
+        return error
+        
+    try:
+        aluno = Usuario.objects.get(id=aluno_id, role=RoleChoices.ALUNO)
+        if monitor.role != RoleChoices.ADMIN and aluno.monitor_responsavel_id != monitor.id:
+             return JsonResponse({'error': 'Acesso negado a este aluno'}, status=403)
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Aluno não encontrado'}, status=404)
+        
+    try:
+        data = json.loads(request.body)
+        step_id = data.get('step_id')
+        if not step_id:
+            return JsonResponse({'error': 'step_id é obrigatório'}, status=400)
+    except Exception:
+        return JsonResponse({'error': 'Dados inválidos'}, status=400)
+        
+    # Verificar se o step pertence ao aluno (ou se já foi inicializado)
+    try:
+        step = Step.objects.get(id=step_id)
+        progresso, created = ProgressoAluno.objects.get_or_create(
+            aluno=aluno,
+            step=step,
+            defaults={'status': StatusProgresso.EM_ANDAMENTO}
+        )
+    except Step.DoesNotExist:
+        return JsonResponse({'error': 'Step não encontrado'}, status=404)
+        
+    if progresso.status == StatusProgresso.CONCLUIDO:
+         return JsonResponse({'error': 'Este step já está concluído'}, status=400)
+         
+    # Criar Submissão Fantasma (Auditoria Rigorosa)
+    submissao = Submissao.objects.create(
+        progresso=progresso,
+        resposta_texto=f"Avançado manualmente pelo monitor {monitor.email}",
+        # O método .aprovar() já vai setar aprovado=True, validado_por, etc.
+    )
+    
+    # Executa a aprovação, o que também chama progresso.concluir() e avança o funil
+    submissao.aprovar(monitor, feedback="Avançado manualmente (Ghost Submission)")
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Aluno avançado com sucesso no step: {step.titulo}',
+        'submissao_id': submissao.id
     })
 
 

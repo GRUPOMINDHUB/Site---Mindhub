@@ -1,0 +1,509 @@
+{% extends 'trilha/base_monitor.html' %}
+{% load static %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in relative">
+
+    <!-- Cabeçalho -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white mb-2">Torre de Controle</h1>
+            <p class="text-gray-400 text-sm">Acompanhe o funil de progresso dos alunos e faça intervenções.</p>
+        </div>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="bg-mindhub-dark-gray/50 rounded-xl overflow-hidden shadow-lg border border-white/5">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-black/30 text-gray-400 text-xs uppercase tracking-wider">
+                        <th class="p-4 font-semibold">Aluno</th>
+                        <th class="p-4 font-semibold">Mês Atual</th>
+                        <th class="p-4 font-semibold">Step Atual</th>
+                        <th class="p-4 font-semibold w-48">Progresso</th>
+                        <th class="p-4 font-semibold text-center">Status</th>
+                        <th class="p-4 font-semibold text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for aluno in alunos %}
+                    <tr
+                        class="hover:bg-white/5 transition-colors {% if aluno.critico %}bg-mindhub-red/10 border-l-4 border-l-mindhub-red{% endif %}">
+
+                        <!-- Coluna Aluno -->
+                        <td class="p-4">
+                            <div class="font-medium text-white mb-0.5">{{ aluno.nome }}</div>
+                            <div class="text-xs text-gray-400">{{ aluno.email }}</div>
+                        </td>
+
+                        <!-- Coluna Mês Atual -->
+                        <td class="p-4">
+                            <span
+                                class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-white/10 text-white">
+                                {{ aluno.mundo_atual.nome }}
+                            </span>
+                        </td>
+
+                        <!-- Coluna Step Atual -->
+                        <td class="p-4 text-sm text-gray-300">
+                            {{ aluno.step_atual.titulo }}
+                        </td>
+
+                        <!-- Coluna Progresso -->
+                        <td class="p-4 cursor-pointer hover:bg-white/5"
+                            onclick="openHistoricoDrawer('{{ aluno.id }}', '{{ aluno.nome|escapejs }}')"
+                            title="Clique para ver o histórico">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">{{ aluno.progresso.texto }}</span>
+                                <span class="text-white font-medium">{{ aluno.progresso.porcentagem }}%</span>
+                            </div>
+                            <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-mindhub-red h-1.5 rounded-full"
+                                    style="width: {{ aluno.progresso.porcentagem }}%"></div>
+                            </div>
+                        </td>
+
+                        <!-- Coluna Status Visual -->
+                        <td class="p-4 text-center">
+                            <div class="inline-flex items-center justify-center w-8 h-8 rounded-full shadow border border-white/10"
+                                style="background-color: {{ aluno.cor_nota }}20; color: {{ aluno.cor_nota }}"
+                                title="Nota de Saúde: {{ aluno.nota }}">
+                                <span class="text-sm font-bold">{{ aluno.nota }}</span>
+                            </div>
+                            {% if aluno.critico %}
+                            <div class="text-[10px] text-mindhub-red mt-1 font-semibold animate-pulse">TRAVADO</div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Coluna Ações -->
+                        <td class="p-4 text-right space-x-2">
+                            <!-- Botão WhatsApp -->
+                            {% if aluno.telefone %}
+                            <a href="https://wa.me/{{ aluno.telefone }}?text=Fala {{ aluno.nome|urlencode }}, vi que voc%C3%AA travou no step {{ aluno.step_atual.titulo|urlencode }} do {{ aluno.mundo_atual.nome|urlencode }}. Precisa de alguma ajuda para avan%C3%A7ar?"
+                                target="_blank"
+                                class="inline-flex items-center justify-center w-8 h-8 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white rounded transition-colors"
+                                title="Cobrar via WhatsApp">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                            {% else %}
+                            <button
+                                onclick="alert('Este aluno não possui número de telefone cadastrado no sistema. Vá em Gerenciar Acessos para adicionar um número.')"
+                                class="inline-flex items-center justify-center w-8 h-8 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white rounded transition-colors"
+                                title="Sem telefone cadastrado">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- Botão Pular Step (Ghost Submission) -->
+                            {% if aluno.step_atual.id %}
+                            <button
+                                onclick="forcarAvanco('{{ aluno.id }}', '{{ aluno.step_atual.id }}', '{{ aluno.nome|escapejs }}')"
+                                class="inline-flex items-center justify-center w-8 h-8 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors"
+                                title="Pular este Step (Avanço Manual)">
+                                <i class="fas fa-forward"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- Botão Ver Histórico -->
+                            <button onclick="openHistoricoDrawer('{{ aluno.id }}', '{{ aluno.nome|escapejs }}')"
+                                class="inline-flex items-center justify-center w-8 h-8 bg-white/10 text-gray-300 hover:bg-white hover:text-black rounded transition-colors"
+                                title="Ver Histórico">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-500">
+                            Nenhum aluno encontrado ou atribuído a você.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Overlay Escuro -->
+<div id="drawerOverlay"
+    class="fixed inset-0 bg-black/50 z-40 opacity-0 transition-opacity duration-300 pointer-events-none"
+    onclick="closeHistoricoDrawer()"></div>
+
+<!-- Drawer Lateral (Side Drawer) - Histórico do Aluno -->
+<div id="historicoDrawer"
+    class="fixed inset-y-0 right-0 max-w-md w-full bg-mindhub-dark shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 border-l border-white/10">
+
+    <!-- Header do Drawer -->
+    <div class="p-5 border-b border-white/10 bg-black/20">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center">
+                    <i class="fas fa-history mr-2 text-mindhub-red"></i> Histórico de Envios
+                </h2>
+                <p id="drawerAlunoNome" class="text-sm text-gray-400 mt-1">Carregando...</p>
+            </div>
+            <button onclick="closeHistoricoDrawer()" class="text-gray-400 hover:text-white transition-colors p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Filtro de Mês (Dropdown V2) -->
+        <div id="drawerFilterContainer" class="hidden">
+            <label for="drawerMonthFilter" class="block text-xs font-medium text-gray-400 mb-1">Filtrar por Mês:</label>
+            <select id="drawerMonthFilter"
+                class="bg-mindhub-dark border border-white/10 text-white text-sm rounded-lg focus:ring-mindhub-red focus:border-mindhub-red block w-full p-2.5 transition-colors cursor-pointer"
+                onchange="renderizarTimeline(this.value)">
+                <option value="all">Carregando meses...</option>
+            </select>
+        </div>
+    </div>
+    <p id="drawerAlunoNome" class="text-sm text-gray-400 mt-1">Carregando...</p>
+</div>
+<button onclick="closeHistoricoDrawer()" class="text-gray-400 hover:text-white transition-colors p-2">
+    <i class="fas fa-times text-xl"></i>
+</button>
+</div>
+
+<!-- Conteúdo do Drawer (Scrollable) -->
+<div class="p-5 overflow-y-auto h-[calc(100vh-85px)] custom-scrollbar" id="drawerContent">
+    <!-- Loader -->
+    <div id="drawerLoader" class="flex justify-center items-center py-10">
+        <i class="fas fa-circle-notch fa-spin text-mindhub-red text-2xl"></i>
+    </div>
+
+    <!-- Linha do Tempo -->
+    <div id="drawerTimeline" class="hidden relative border-l border-white/10 ml-3 space-y-6 pb-10">
+        <!-- Itens injetados via JS -->
+    </div>
+
+    <div id="drawerEmpty" class="hidden text-center text-gray-500 py-10">
+        <i class="fas fa-ghost text-4xl mb-3 opacity-20"></i>
+        <p>Nenhum histórico encontrado.</p>
+    </div>
+</div>
+</div>
+
+<script>
+    // --- LÓGICA DO PULO FORÇADO (GHOST SUBMISSION) ---
+    async function forcarAvanco(alunoId, stepId, alunoNome) {
+        if (!confirm(`Tem certeza que deseja AVANÇAR MANUALMENTE o aluno ${alunoNome} neste step?\n\nIsso deixará um rastro de auditoria.`)) {
+            return;
+        }
+
+        try {
+            const btn = event.currentTarget;
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            const response = await fetch(`/api/monitor/aluno/${alunoId}/forcar-avanco/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Pegar token CSRF dos cookies se usar sessão normal, 
+                    // Mas a API tem @csrf_exempt
+                },
+                body: JSON.stringify({ step_id: parseInt(stepId) })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Notificação de Sucesso
+                alert('Sucesso: ' + data.message);
+                // Recarrega a página para atualizar o funil
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Erro desconhecido ao avançar.');
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Erro: ' + error.message);
+            // Restaura botão
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-forward"></i>';
+            btn.disabled = false;
+        }
+    }
+
+    // Variável Global para persistir os dados da API abertos no Drawer
+    let drawerDataAtual = null;
+
+    // --- LÓGICA DO DRAWER LATERAL V2 ---
+    function openHistoricoDrawer(alunoId, alunoNome) {
+        const drawer = document.getElementById('historicoDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const nomeEl = document.getElementById('drawerAlunoNome');
+        const loader = document.getElementById('drawerLoader');
+        const timeline = document.getElementById('drawerTimeline');
+        const emptyState = document.getElementById('drawerEmpty');
+        const filterContainer = document.getElementById('drawerFilterContainer');
+
+        // Reset visual e Mostrar Drawer
+        nomeEl.textContent = alunoNome;
+        timeline.innerHTML = '';
+        drawerDataAtual = null;
+
+        drawer.classList.remove('translate-x-full');
+        overlay.classList.remove('opacity-0', 'pointer-events-none');
+
+        loader.classList.remove('hidden');
+        timeline.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        filterContainer.classList.add('hidden');
+
+        // Fetch dados detalhados do aluno
+        fetch(`/api/monitor/aluno/${alunoId}/`)
+            .then(res => res.json())
+            .then(data => {
+                loader.classList.add('hidden');
+                drawerDataAtual = data;
+
+                if (!data.steps_auditoria || data.steps_auditoria.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                // Configurar Dropdown
+                if (data.todos_mundos && data.todos_mundos.length > 0) {
+                    const select = document.getElementById('drawerMonthFilter');
+                    select.innerHTML = '<option value="all">Todos os Meses</option>';
+
+                    // Remover meses duplicados do filtro
+                    const mundosUnicos = [];
+                    const mapMundos = new Map();
+                    data.todos_mundos.forEach(mundo => {
+                        if (!mapMundos.has(mundo.numero)) {
+                            mapMundos.set(mundo.numero, true);
+                            mundosUnicos.push(mundo);
+                        }
+                    });
+
+                    mundosUnicos.forEach(mundo => {
+                        select.insertAdjacentHTML('beforeend', `<option value="${mundo.numero}">${mundo.nome}</option>`);
+                    });
+
+                    // Pré-selecionar o Mês atual do aluno se existir
+                    if (data.progresso && data.progresso.mundo_atual) {
+                        const currentOption = Array.from(select.options).find(opt => opt.value === data.progresso.mundo_atual.numero.toString());
+                        if (currentOption) {
+                            select.value = currentOption.value;
+                        }
+                    }
+                    filterContainer.classList.remove('hidden');
+                }
+
+                // Renderizar com base no dropdown
+                renderizarTimeline(document.getElementById('drawerMonthFilter').value);
+            })
+            .catch(err => {
+                console.error('Erro ao carregar histórico:', err);
+                loader.classList.add('hidden');
+                emptyState.innerHTML = '<p class="text-mindhub-red"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Erro ao carregar dados.</p>';
+                emptyState.classList.remove('hidden');
+            });
+    }
+
+    // --- RENDERIZAR TIMELINE FILTRADA ---
+    function renderizarTimeline(mundoId) {
+        const timeline = document.getElementById('drawerTimeline');
+        const emptyState = document.getElementById('drawerEmpty');
+
+        timeline.innerHTML = '';
+
+        if (!drawerDataAtual || !drawerDataAtual.steps_auditoria) return;
+
+        // Filtrar
+        const stepsFiltrados = mundoId === 'all'
+            ? drawerDataAtual.steps_auditoria
+            : drawerDataAtual.steps_auditoria.filter(s => s.mundo_numero && s.mundo_numero.toString() === mundoId);
+
+        if (stepsFiltrados.length === 0) {
+            timeline.classList.add('hidden');
+            emptyState.innerHTML = '<i class="fas fa-ghost text-4xl mb-3 opacity-20"></i><p>Nenhuma submissão neste mês.</p>';
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        timeline.classList.remove('hidden');
+
+        // Renderizar Lista
+        stepsFiltrados.forEach((step, index) => {
+            let statusColor = 'text-gray-500';
+            let statusIcon = 'fa-circle';
+            let statusBg = 'bg-white/5';
+            let statusDot = 'bg-gray-500';
+
+            // Status do Progresso no Step
+            if (step.status_progresso === 'CONCLUIDO') {
+                statusColor = 'text-green-500';
+                statusIcon = 'fa-check';
+                statusBg = 'bg-green-500/20';
+                statusDot = 'bg-green-500';
+            } else if (step.status_progresso === 'PENDENTE_VALIDACAO') {
+                statusColor = 'text-yellow-500';
+                statusIcon = 'fa-hourglass-half';
+                statusBg = 'bg-yellow-500/20';
+                statusDot = 'bg-yellow-500';
+            } else if (step.status_progresso === 'EM_ANDAMENTO') {
+                statusColor = 'text-blue-500';
+                statusIcon = 'fa-play';
+                statusBg = 'bg-blue-500/20';
+                statusDot = 'bg-blue-500';
+            }
+
+            // Tem prova vinculada?
+            const sub = step.submissao;
+            let accordionHtml = '';
+
+            if (sub) {
+                const dataObj = new Date(sub.data_envio);
+                const dataFmt = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+                // Tipo de Prova
+                let provaHtml = '';
+                if (sub.arquivo) {
+                    provaHtml = `
+                        <div class="mt-3">
+                            <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold flex items-center mb-2"><i class="fas fa-camera mr-1"></i> Foto Enviada</span>
+                            <a href="${sub.arquivo}" target="_blank" class="block hover:opacity-80 transition-opacity">
+                                <img src="${sub.arquivo}" class="w-full max-h-48 object-cover rounded border border-white/10" alt="Prova do aluno">
+                            </a>
+                        </div>`;
+                } else if (sub.resposta_texto) {
+                    provaHtml = `
+                        <div class="mt-3">
+                            <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold flex items-center mb-2"><i class="fas fa-align-left mr-1"></i> Texto Enviado</span>
+                            <div class="bg-black/30 border-l-2 border-mindhub-red p-3 rounded-r text-sm text-gray-300 whitespace-pre-wrap">${sub.resposta_texto}</div>
+                        </div>`;
+                } else if (sub.resposta_formulario) {
+                    // JSON parsing safely
+                    try {
+                        const formJson = typeof sub.resposta_formulario === 'string' ? JSON.parse(sub.resposta_formulario) : sub.resposta_formulario;
+                        let formTableRows = '';
+                        // Se o JSON for um dicionario chave-valor simples
+                        if (formJson && typeof formJson === 'object' && !Array.isArray(formJson)) {
+                            for (const [key, val] of Object.entries(formJson)) {
+                                formTableRows += `
+                                    <tr class="border-b border-lightest-gray/5 last:border-0 hover:bg-white/5 transition-colors">
+                                        <td class="py-2 text-xs font-semibold text-gray-400 w-1/3">${key}</td>
+                                        <td class="py-2 text-sm text-white">${val}</td>
+                                    </tr>`;
+                            }
+                        } else if (Array.isArray(formJson) && formJson.length > 0) {
+                            formJson.forEach(item => {
+                                formTableRows += `
+                                    <tr class="border-b border-lightest-gray/5 last:border-0 hover:bg-white/5 transition-colors">
+                                        <td class="py-2 text-xs font-semibold text-gray-400 w-1/3">${item.pergunta || item.label || 'Pergunta'}</td>
+                                        <td class="py-2 text-sm text-white">${item.resposta || item.value || '-'}</td>
+                                    </tr>`;
+                            });
+                        }
+
+                        if (formTableRows) {
+                            provaHtml = `
+                            <div class="mt-3">
+                                <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold flex items-center mb-2"><i class="fas fa-list mr-1"></i> Formulário Respondido</span>
+                                <div class="bg-black/20 rounded border border-white/5 overflow-hidden">
+                                    <table class="w-full text-left">
+                                        <tbody>${formTableRows}</tbody>
+                                    </table>
+                                </div>
+                            </div>`;
+                        }
+                    } catch (e) { console.error("Erro parsing JSON no form", e); }
+                }
+
+                // Feedback da Aprovação
+                const isManual = sub.status === 'aprovado' && sub.feedback && sub.feedback.includes("Avançado manualmente");
+                let subBadgeColor = sub.status === 'aprovado' ? 'text-green-500' : (sub.status === 'reprovado' ? 'text-mindhub-red' : 'text-yellow-500');
+
+                accordionHtml = `
+                    <div class="mt-3 border-t border-white/10 pt-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-gray-400"><i class="far fa-clock mr-1"></i>Enviado em: ${dataFmt}</span>
+                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/50 ${subBadgeColor}">${isManual ? 'Avanço Manual' : sub.status}</span>
+                        </div>
+                        
+                        ${provaHtml}
+                        
+                        ${sub.feedback ? `<div class="mt-3 p-2 bg-white/5 rounded"><p class="text-xs text-gray-400"><strong class="text-white">Feedback do Avaliador:</strong> ${sub.feedback}</p></div>` : ''}
+                    </div>
+                `;
+            }
+
+            const isClickable = sub !== null;
+            const containerClasses = isClickable ? "bg-white/5 hover:bg-white/10 cursor-pointer" : "bg-white/5 opacity-70";
+            const accordionId = `accordion-step-${index}`;
+
+            const itemHTML = `
+                <div class="relative pl-6">
+                    <!-- Dot -->
+                    <div class="absolute -left-1.5 top-1.5 w-3 h-3 ${statusDot} rounded-full ring-4 ring-mindhub-dark shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
+                    
+                    <div class="rounded-lg border border-white/5 transition-colors overflow-hidden ${containerClasses}"
+                         onclick="${isClickable ? `toggleAccordion('${accordionId}')` : ''}">
+                        
+                        <div class="p-4">
+                            <div class="flex justify-between items-start gap-2">
+                                <h4 class="text-white text-sm font-medium leading-tight">${step.titulo}</h4>
+                                <div class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase min-w-max ${statusBg} ${statusColor}">
+                                    <i class="fas ${statusIcon} mr-1"></i> ${step.status_progresso.replace('_', ' ')}
+                                </div>
+                            </div>
+                            
+                            <!-- Accordion Wrapper -->
+                            <div id="${accordionId}" class="hidden">
+                                ${accordionHtml}
+                            </div>
+                            
+                            ${isClickable ? `<div class="mt-2 text-center text-gray-500 text-xs opacity-50"><i class="fas fa-chevron-down"></i> Clique para expandir a prova</div>` : `<div class="mt-2 text-xs text-gray-600 italic">Sem evidência submetida.</div>`}
+                        </div>
+                    </div>
+                </div>
+            `;
+            timeline.insertAdjacentHTML('beforeend', itemHTML);
+        });
+    }
+
+    function toggleAccordion(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden');
+        }
+    }
+
+    function closeHistoricoDrawer() {
+        const drawer = document.getElementById('historicoDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+
+        drawer.classList.add('translate-x-full');
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+    }
+</script>
+
+<style>
+    /* Customização do Scrollbar pro Drawer */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+</style>
+{% endblock %}

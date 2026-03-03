@@ -12,6 +12,7 @@ urlpatterns = [
     path('monitor/graph/', views.monitor_graph, name='monitor_graph'),
     path('monitor/validar/', views.monitor_validar, name='monitor_validar'),
     path('monitor/alunos/', views.monitor_lista_alunos, name='monitor_lista_alunos'),
+    path('monitor/funil/', views.monitor_funil_progresso, name='monitor_funil_progresso'),
     path('gerenciar/<int:aluno_id>/', views.gerenciar_trilha, name='gerenciar_trilha'),
     
     # Área do Aluno - Navegação de Dois Níveis
@@ -24,6 +25,7 @@ urlpatterns = [
     path('api/monitor/aluno/<int:aluno_id>/', api.api_monitor_aluno_detalhe, name='api_monitor_aluno_detalhe'),
     path('api/monitor/aluno/<int:aluno_id>/nota/', api.api_monitor_atualizar_nota, name='api_monitor_atualizar_nota'),
     path('api/monitor/aluno/<int:aluno_id>/alerta/', api.api_monitor_enviar_alerta, name='api_monitor_enviar_alerta'),
+    path('api/monitor/aluno/<int:aluno_id>/forcar-avanco/', api.api_monitor_forcar_avanco, name='api_monitor_forcar_avanco'),
     path('api/monitor/submissoes-pendentes/', api.api_monitor_submissoes_pendentes, name='api_monitor_submissoes_pendentes'),
     path('api/monitor/submissao/<int:submissao_id>/validar/', api.api_monitor_validar_submissao, name='api_monitor_validar_submissao'),
     path('api/monitor/estatisticas/', api.api_monitor_estatisticas, name='api_monitor_estatisticas'),

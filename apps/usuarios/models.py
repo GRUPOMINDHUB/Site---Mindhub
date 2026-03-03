@@ -50,18 +50,26 @@ class Usuario(models.Model):
         verbose_name_plural = 'Usuários'
     
     def __str__(self):
-        return self.nome or self.email
-    
-    def verificar_senha(self, senha):
+        return f"{self.email} ({self.role})"
+        
+    @property
+    def telefone_sem_formatacao(self):
+        """Retorna apenas os números do telefone para links do WhatsApp."""
+        if not self.telefone:
+            return ""
+        import re
+        return re.sub(r'\D', '', self.telefone)
+        
+    def verificar_senha(self, senha_raw):
         """
-        Verifica se a senha fornecida corresponde à senha armazenada.
+        Verifica a senha. Tenta hash Django primeiro.
         Suporta tanto texto plano (legado) quanto hash.
         """
         # Se a senha começa com algoritmo de hash do Django
         if self.senha.startswith('pbkdf2_') or self.senha.startswith('argon2'):
-            return check_password(senha, self.senha)
+            return check_password(senha_raw, self.senha)
         # Fallback para texto plano (legado)
-        return self.senha == senha
+        return self.senha == senha_raw
     
     def set_senha(self, senha):
         """Define a senha com hash seguro."""

@@ -140,21 +140,24 @@
                     class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_validar' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-clipboard-check w-5"></i>
                     <span>Validar</span>
-                    <span id="badge-pendentes"
-                        class="ml-auto bg-mindhub-red text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
-                </a>
-                <a href="{% url 'trilha:monitor_lista_alunos' %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
-                    <i class="fas fa-sitemap w-5"></i>
-                    <span>Gestão de Trilhas</span>
-                </a>
-                {% endif %}
+                    <span id="badge-pendentes" </a>
+                        <a href="{% url 'trilha:monitor_funil_progresso' %}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_funil_progresso' %}bg-mindhub-red text-white{% endif %}">
+                            <i class="fas fa-filter w-5"></i>
+                            <span>Torre de Controle</span>
+                        </a>
+                        <a href="{% url 'trilha:monitor_lista_alunos' %}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
+                            <i class="fas fa-sitemap w-5"></i>
+                            <span>Gestão de Trilhas</span>
+                        </a>
+                        {% endif %}
 
-                <a href="{% url 'usuarios:gerenciar_acessos' %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
-                    <i class="fas fa-users w-5"></i>
-                    <span>Gerenciar Acessos</span>
-                </a>
+                        <a href="{% url 'usuarios:gerenciar_acessos' %}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
+                            <i class="fas fa-users w-5"></i>
+                            <span>Gerenciar Acessos</span>
+                        </a>
             </nav>
         </div>
 

@@ -9,7 +9,7 @@ from django.db.models import Prefetch
 
 from apps.usuarios.models import Usuario, RoleChoices
 from apps.usuarios.utils import get_usuario_logado
-from .models import Mundo, Step, ProgressoAluno, StatusProgresso
+from .models import Mundo, Step, ProgressoAluno, StatusProgresso, NotaSaude, NotaSaude
 from .decorators import aluno_required
 
 
@@ -287,6 +287,77 @@ def monitor_lista_alunos(request):
     return render(request, 'trilha/lista_alunos_trilha.html', {
         'usuario': usuario,
         'page_title': 'Gestão de Trilhas'
+    })
+
+
+@bloquear_comercial
+def monitor_funil_progresso(request):
+    """
+    Torre de Controle / Funil de Progresso.
+    Visão tabular do andamento dos alunos, com ações de zap e pulo.
+    """
+    usuario = verificar_acesso_monitor(request)
+    if not usuario:
+        return redirect('usuarios:login')
+    
+    alunos_qs = Usuario.objects.filter(role=RoleChoices.ALUNO, ativo=True)
+    
+    # Se for monitor, restringe aos seus alunos
+    if usuario.role == RoleChoices.MONITOR:
+        alunos_qs = alunos_qs.filter(monitor_responsavel=usuario)
+        
+    alunos_data = []
+    
+    for aluno in alunos_qs:
+        mundo_atual = aluno.get_mundo_atual()
+        step_atual = aluno.get_step_atual()
+        nota_atual = NotaSaude.get_nota_atual(aluno)
+        
+        # Progresso no mundo atual
+        porcentagem = 0
+        progresso_texto = "N/A"
+        if mundo_atual:
+            total_steps = mundo_atual.steps.count()
+            if total_steps > 0:
+                steps_concluidos = ProgressoAluno.objects.filter(
+                    aluno=aluno,
+                    step__mundo=mundo_atual,
+                    status=StatusProgresso.CONCLUIDO
+                ).count()
+                porcentagem = round((steps_concluidos / total_steps) * 100)
+                
+                # Exemplo: Step 2 de 4
+                step_ordem = step_atual.ordem if step_atual else steps_concluidos
+                progresso_texto = f"Step {step_ordem} de {total_steps}"
+                if steps_concluidos == total_steps:
+                    progresso_texto = "Concluído"
+        
+        alunos_data.append({
+            'id': aluno.id,
+            'nome': aluno.nome or aluno.email.split('@')[0],
+            'email': aluno.email,
+            'telefone': aluno.telefone_sem_formatacao, # Propriedade helper que definiremos
+            'nota': nota_atual,
+            'cor_nota': NotaSaude.get_cor_nota(nota_atual),
+            'critico': nota_atual == 1,
+            'mundo_atual': {
+                'nome': mundo_atual.nome if mundo_atual else "Sem Trilha",
+                'numero': mundo_atual.numero if mundo_atual else 0
+            },
+            'step_atual': {
+                'id': step_atual.id if step_atual else None,
+                'titulo': step_atual.titulo if step_atual else "Finalizado",
+            },
+            'progresso': {
+                'porcentagem': porcentagem,
+                'texto': progresso_texto
+            }
+        })
+        
+    return render(request, 'trilha/funil_progresso.html', {
+        'usuario': usuario,
+        'alunos': alunos_data,
+        'page_title': 'Torre de Controle'
     })
 
 
