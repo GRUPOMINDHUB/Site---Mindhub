@@ -11,8 +11,8 @@ urlpatterns = [
     # Autenticação
     path('', views.landing_page, name='landing_page'),
     path('login/', views.index, name='index'), # Login page (antiga index)
-    path('api/login', views.login_endpoint, name='login_endpoint'), # API Endpoint
-    path('logout', views.logout, name='logout'),
+    path('api/login/', views.login_endpoint, name='login_endpoint'), # API Endpoint
+    path('logout/', views.logout, name='logout'),
     
     # Gestão de Acessos
     path('gerenciar-acessos/', views.gerenciar_acessos, name='gerenciar_acessos'),

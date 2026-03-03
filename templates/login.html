@@ -42,7 +42,7 @@
             const senha = document.querySelector('#password').value;
 
             try {
-                const resposta = await fetch('/login', {
+                const resposta = await fetch('/api/login/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
