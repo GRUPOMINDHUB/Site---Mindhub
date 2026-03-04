@@ -146,6 +146,14 @@
                             <i class="fas fa-filter w-5"></i>
                             <span>Torre de Controle</span>
                         </a>
+
+                        <!-- NOVO MODULO FINANCEIRO -->
+                        <a href="{% url 'financeiro:dashboard' %}"
+                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'financeiro' in request.path %}bg-mindhub-red text-white{% endif %}">
+                            <i class="fas fa-wallet w-5"></i>
+                            <span>Financeiro</span>
+                        </a>
+
                         <a href="{% url 'trilha:monitor_lista_alunos' %}"
                             class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
                             <i class="fas fa-sitemap w-5"></i>

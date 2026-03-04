@@ -11,6 +11,7 @@ from apps.usuarios.models import Usuario, RoleChoices
 from apps.usuarios.utils import get_usuario_logado
 from .models import Mundo, Step, ProgressoAluno, StatusProgresso, NotaSaude, NotaSaude
 from .decorators import aluno_required
+from apps.financeiro.decorators import bloquear_inadimplente
 
 
 def verificar_acesso_monitor(request):
@@ -89,12 +90,14 @@ def monitor_validar(request):
 # ÁREA DO ALUNO - NAVEGAÇÃO DOIS NÍVEIS
 # ========================================
 
+@bloquear_inadimplente
 @aluno_required
 def aluno_mapa(request):
     """Redireciona para a home da trilha (novo sistema de dois níveis)."""
     return redirect('trilha:home_trilha')
 
 
+@bloquear_inadimplente
 @aluno_required
 def home_trilha(request):
     """
@@ -169,6 +172,7 @@ def home_trilha(request):
     })
 
 
+@bloquear_inadimplente
 @aluno_required
 def detalhe_mes(request, mes_id):
     """

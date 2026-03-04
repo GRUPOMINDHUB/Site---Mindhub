@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'apps.ia_engine',
     'apps.core',
     'apps.trilha',
+    'apps.financeiro',
 ]
 
 MIDDLEWARE = [

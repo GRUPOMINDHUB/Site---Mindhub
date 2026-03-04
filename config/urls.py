@@ -14,6 +14,7 @@ urlpatterns = [
     path('', include('apps.ia_engine.urls')),
     path('', include('apps.trilha.urls')),
     path('trilha/', include('apps.trilha.urls')), # Redundancia para compatibilidade
+    path('financeiro/', include('apps.financeiro.urls')),
 ]
 
 # Serve media files in development
