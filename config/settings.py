@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.core',
     'apps.trilha',
     'apps.financeiro',
+    'apps.comercial',
 ]
 
 MIDDLEWARE = [

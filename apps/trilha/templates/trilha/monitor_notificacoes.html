@@ -1,0 +1,232 @@
+{% extends "trilha/base_monitor.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(227,6,19,0.16),_transparent_35%),linear-gradient(135deg,_rgba(18,18,18,1),_rgba(8,8,8,1))] p-6 shadow-2xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.26em] text-red-200/70">Notificacoes</p>
+        <h1 class="mt-3 text-3xl font-black text-white">Fila operacional do monitor e do ADM Master.</h1>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-zinc-300">
+            Onboarding novo, submissao pendente e proposta financeira passam a conviver na mesma caixa de trabalho.
+        </p>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div class="space-y-6">
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Alertas internos</h2>
+                    <p class="mt-1 text-sm text-zinc-500">Onboarding, propostas e lembretes do sistema.</p>
+                </div>
+                <div class="space-y-4">
+                    {% for notificacao in notificacoes_internas %}
+                    <article class="rounded-2xl border {% if notificacao.lida %}border-white/10 bg-[#121212]{% else %}border-red-500/20 bg-red-500/10{% endif %} p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-sm font-semibold uppercase tracking-[0.18em] {% if notificacao.lida %}text-zinc-400{% else %}text-red-100{% endif %}">
+                                    {{ notificacao.tipo }}
+                                </p>
+                                <h3 class="mt-2 text-lg font-bold text-white">{{ notificacao.titulo }}</h3>
+                                <p class="mt-2 text-sm leading-6 text-zinc-300">{{ notificacao.mensagem }}</p>
+                                <p class="mt-3 text-xs text-zinc-500">{{ notificacao.criada_em|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            <form method="post" action="{% url 'comercial:marcar_notificacao_lida' notificacao.id %}" class="flex-shrink-0">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                                    {% if notificacao.lida %}Reabrir destino{% else %}Abrir{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                    {% empty %}
+                    <p class="text-sm text-zinc-500">Nenhum alerta interno pendente.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if propostas_pendentes %}
+            <section class="rounded-[28px] border border-red-500/20 bg-[#120d0d] p-6">
+                <div class="mb-5 border-b border-red-500/20 pb-4">
+                    <h2 class="text-lg font-bold text-white">Propostas financeiras pendentes</h2>
+                    <p class="mt-1 text-sm text-red-100/70">Somente ADM Master aprova ou rejeita.</p>
+                </div>
+                <div class="space-y-4">
+                    {% for proposta in propostas_pendentes %}
+                    <article class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">{{ proposta.aluno.nome|default:proposta.aluno.email }}</h3>
+                                <p class="mt-1 text-sm text-zinc-400">Monitor: {{ proposta.criada_por.nome|default:proposta.criada_por.email }}</p>
+                                <p class="mt-3 text-sm text-zinc-300">{{ proposta.motivo }}</p>
+                            </div>
+                            <a href="{% url 'comercial:cadastro_detalhe' proposta.aluno.id %}" class="text-sm text-red-200 underline underline-offset-4">
+                                Abrir ficha
+                            </a>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            {% for parcela in proposta.parcelas_propostas.all %}
+                            <div class="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-sm text-zinc-300">
+                                <span>Parcela {{ parcela.numero }}</span>
+                                <span>R$ {{ parcela.valor|floatformat:2 }} · {{ parcela.data_vencimento|date:"d/m/Y" }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if usuario.is_admin_master %}
+                        <div class="mt-4 grid gap-3 md:grid-cols-2">
+                            <form method="post" action="{% url 'comercial:aprovar_proposta' proposta.id %}" class="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                                {% csrf_token %}
+                                <label class="block text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/70">Parecer do ADM</label>
+                                <textarea name="observacao_admin" rows="2" class="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"></textarea>
+                                <button type="submit" class="w-full rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600">
+                                    Aprovar proposta
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'comercial:rejeitar_proposta' proposta.id %}" class="space-y-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
+                                {% csrf_token %}
+                                <label class="block text-xs font-semibold uppercase tracking-[0.18em] text-red-100/70">Justificativa</label>
+                                <textarea name="observacao_admin" rows="2" class="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"></textarea>
+                                <button type="submit" class="w-full rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">
+                                    Rejeitar proposta
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+        </div>
+
+        <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+            <div class="mb-5 border-b border-white/10 pb-4">
+                <h2 class="text-lg font-bold text-white">Submissoes pendentes</h2>
+                <p class="mt-1 text-sm text-zinc-500">Aprovacao e reprova sao mantidas aqui, agora dentro de Notificacoes.</p>
+            </div>
+            <div class="space-y-4">
+                {% for submissao in submissoes_pendentes %}
+                <article class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ submissao.progresso.step.mundo.nome }}</p>
+                            <h3 class="mt-2 text-lg font-bold text-white">{{ submissao.progresso.aluno.nome|default:submissao.progresso.aluno.email }}</h3>
+                            <p class="mt-1 text-sm text-zinc-400">{{ submissao.progresso.step.titulo }} · {{ submissao.progresso.step.tipo_validacao }}</p>
+                            <p class="mt-2 text-sm text-zinc-500">{{ submissao.data_envio|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <button type="button" onclick="abrirModalSubmissao({{ submissao.id }})"
+                            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                            Revisar
+                        </button>
+                    </div>
+                </article>
+                {% empty %}
+                <p class="text-sm text-zinc-500">Nao ha submissao pendente neste momento.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </section>
+</div>
+
+<div id="modal-validar" class="fixed inset-0 z-50 hidden bg-black/70 p-4 backdrop-blur-sm">
+    <div class="mx-auto flex h-full max-w-3xl items-center justify-center">
+        <div class="w-full rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6" id="modal-content"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const submissoes = [
+    {% for s in submissoes_pendentes %}
+    {
+        id: {{ s.id }},
+        aluno: {
+            nome: '{{ s.progresso.aluno.nome|default:s.progresso.aluno.email|escapejs }}',
+            email: '{{ s.progresso.aluno.email|escapejs }}',
+            foto: {% if s.progresso.aluno.foto %}'{{ s.progresso.aluno.foto.url|escapejs }}'{% else %}null{% endif %}
+        },
+        step: {
+            mundo: '{{ s.progresso.step.mundo.nome|escapejs }}',
+            titulo: '{{ s.progresso.step.titulo|escapejs }}',
+            tipo_validacao: '{{ s.progresso.step.tipo_validacao|escapejs }}'
+        },
+        data_envio: '{{ s.data_envio|date:"c" }}',
+        arquivo: {% if s.arquivo %}'{{ s.arquivo.url|escapejs }}'{% else %}null{% endif %},
+        resposta_texto: '{{ s.resposta_texto|default_if_none:""|escapejs }}',
+        resposta_formulario: {% if s.resposta_formulario %}'{{ s.resposta_formulario|escapejs }}'{% else %}null{% endif %}
+    },
+    {% endfor %}
+];
+
+let submissaoAtual = null;
+
+function abrirModalSubmissao(id) {
+    submissaoAtual = submissoes.find((item) => item.id === id);
+    if (!submissaoAtual) {
+        return;
+    }
+
+    const s = submissaoAtual;
+    document.getElementById('modal-content').innerHTML = `
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Submissao pendente</p>
+                <h3 class="mt-2 text-2xl font-black text-white">${s.aluno.nome}</h3>
+                <p class="mt-1 text-sm text-zinc-400">${s.step.mundo} · ${s.step.titulo}</p>
+            </div>
+            <button type="button" onclick="fecharModal()" class="rounded-full border border-white/10 bg-white/5 p-3 text-zinc-300">
+                ✕
+            </button>
+        </div>
+        <div class="mt-6 space-y-4">
+            ${s.arquivo ? `<a href="${s.arquivo}" target="_blank" class="inline-block rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200">Abrir anexo</a>` : ''}
+            ${s.resposta_texto ? `<div class="rounded-2xl border border-white/10 bg-[#121212] p-4 text-sm text-zinc-300">${s.resposta_texto}</div>` : ''}
+            ${s.resposta_formulario ? `<pre class="overflow-auto rounded-2xl border border-white/10 bg-[#121212] p-4 text-sm text-zinc-300">${s.resposta_formulario}</pre>` : ''}
+            <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Feedback</span>
+                <textarea id="feedback-validacao" rows="3" class="w-full rounded-2xl border border-white/10 bg-[#121212] px-3 py-2 text-sm text-white"></textarea>
+            </label>
+            <div class="grid gap-3 md:grid-cols-2">
+                <button type="button" onclick="validarSubmissao(false)" class="rounded-2xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/25">
+                    Reprovar
+                </button>
+                <button type="button" onclick="validarSubmissao(true)" class="rounded-2xl border border-emerald-500/30 bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600">
+                    Aprovar
+                </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('modal-validar').classList.remove('hidden');
+}
+
+function fecharModal() {
+    document.getElementById('modal-validar').classList.add('hidden');
+}
+
+async function validarSubmissao(aprovado) {
+    const feedback = document.getElementById('feedback-validacao').value.trim();
+    if (!aprovado && !feedback) {
+        alert('Feedback obrigatorio para reprovacao.');
+        return;
+    }
+
+    const response = await fetch(`/api/monitor/submissao/${submissaoAtual.id}/validar/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aprovado, feedback })
+    });
+    const data = await response.json();
+    if (data.success) {
+        window.location.reload();
+        return;
+    }
+    alert(data.error || 'Erro ao validar submissao.');
+}
+
+document.getElementById('modal-validar').addEventListener('click', (event) => {
+    if (event.target.id === 'modal-validar') {
+        fecharModal();
+    }
+});
+</script>
+{% endblock %}

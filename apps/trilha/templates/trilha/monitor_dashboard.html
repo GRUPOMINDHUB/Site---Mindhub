@@ -27,8 +27,8 @@
                 <i class="fas fa-clock text-yellow-500 text-xl"></i>
             </div>
         </div>
-        <a href="{% url 'trilha:monitor_validar' %}" class="text-sm text-mindhub-red hover:underline mt-3 inline-block">
-            Ver pendentes <i class="fas fa-arrow-right ml-1"></i>
+        <a href="{% url 'trilha:monitor_notificacoes' %}" class="text-sm text-mindhub-red hover:underline mt-3 inline-block">
+            Ir para notificacoes <i class="fas fa-arrow-right ml-1"></i>
         </a>
     </div>
 
@@ -100,14 +100,14 @@
             </div>
         </a>
 
-        <a href="{% url 'trilha:monitor_validar' %}"
+        <a href="{% url 'trilha:monitor_notificacoes' %}"
             class="flex items-center gap-4 p-4 bg-mindhub-dark/50 rounded-lg hover:bg-mindhub-gray/30 transition-all">
             <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                 <i class="fas fa-clipboard-check text-yellow-500"></i>
             </div>
             <div>
-                <p class="font-medium">Validar Submissões</p>
-                <p class="text-sm text-gray-400">Aprovar/Reprovar provas</p>
+                <p class="font-medium">Notificacoes</p>
+                <p class="text-sm text-gray-400">Submissoes, onboarding e propostas</p>
             </div>
         </a>
 

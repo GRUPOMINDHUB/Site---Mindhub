@@ -3,7 +3,6 @@ Views do app Trilha - Mindhub OS.
 """
 import json
 from django.shortcuts import render, redirect
-from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.db.models import Prefetch
 
@@ -72,18 +71,7 @@ def monitor_graph(request):
 
 @bloquear_comercial
 def monitor_validar(request):
-    """
-    Página de validação de submissões.
-    Lista submissões pendentes para aprovar/reprovar.
-    """
-    usuario = verificar_acesso_monitor(request)
-    if not usuario:
-        return redirect('/')
-    
-    return render(request, 'trilha/monitor_validar.html', {
-        'usuario': usuario,
-        'page_title': 'Validar Submissões'
-    })
+    return redirect('trilha:monitor_notificacoes')
 
 
 # ========================================
@@ -363,5 +351,7 @@ def monitor_funil_progresso(request):
         'alunos': alunos_data,
         'page_title': 'Torre de Controle'
     })
+
+
 
 

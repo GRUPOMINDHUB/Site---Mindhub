@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ page_title|default:"Mindhub OS" }}{% endblock %}</title>
 
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -28,14 +26,8 @@
         }
     </script>
 
-    <!-- Google Fonts - Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-
-    <!-- Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <style>
@@ -45,7 +37,6 @@
             color: #ffffff;
         }
 
-        /* Scrollbar personalizada */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -64,19 +55,16 @@
             background: #e30613;
         }
 
-        /* Glassmorphism */
         .glass {
             background: rgba(63, 63, 63, 0.3);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Animações suaves */
         .transition-smooth {
             transition: all 0.3s ease;
         }
 
-        /* Drawer */
         .drawer {
             transform: translateX(100%);
             transition: transform 0.3s ease;
@@ -86,7 +74,6 @@
             transform: translateX(0);
         }
 
-        /* Tooltip */
         .tooltip {
             position: absolute;
             background: rgba(0, 0, 0, 0.9);
@@ -107,15 +94,12 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-
 <body class="min-h-screen bg-mindhub-dark">
-    <!-- Sidebar -->
-    <aside class="fixed left-0 top-0 h-full w-64 bg-mindhub-darker border-r border-mindhub-gray/30 z-40">
+    <aside class="fixed left-0 top-0 z-40 h-full w-64 border-r border-mindhub-gray/30 bg-mindhub-darker">
         <div class="p-6">
-            <!-- Logo -->
-            <div class="flex items-center gap-3 mb-8">
-                <div class="w-10 h-10 bg-mindhub-red rounded-lg flex items-center justify-center">
-                    <i class="fas fa-brain text-white text-xl"></i>
+            <div class="mb-8 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-mindhub-red">
+                    <i class="fas fa-brain text-xl text-white"></i>
                 </div>
                 <div>
                     <h1 class="text-lg font-bold text-white">Mindhub OS</h1>
@@ -123,108 +107,105 @@
                 </div>
             </div>
 
-            <!-- Menu -->
             <nav class="space-y-2">
                 {% if usuario.is_admin or usuario.is_monitor %}
                 <a href="{% url 'trilha:monitor_dashboard' %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_dashboard' %}bg-mindhub-red text-white{% endif %}">
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if request.resolver_match.url_name == 'monitor_dashboard' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-chart-pie w-5"></i>
                     <span>Dashboard</span>
                 </a>
                 <a href="{% url 'trilha:monitor_graph' %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_graph' %}bg-mindhub-red text-white{% endif %}">
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if request.resolver_match.url_name == 'monitor_graph' %}bg-mindhub-red text-white{% endif %}">
                     <i class="fas fa-project-diagram w-5"></i>
                     <span>Graph View</span>
                 </a>
-                <a href="{% url 'trilha:monitor_validar' %}"
-                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_validar' %}bg-mindhub-red text-white{% endif %}">
-                    <i class="fas fa-clipboard-check w-5"></i>
-                    <span>Validar</span>
-                    <span id="badge-pendentes" </a>
-                        <a href="{% url 'trilha:monitor_funil_progresso' %}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_funil_progresso' %}bg-mindhub-red text-white{% endif %}">
-                            <i class="fas fa-filter w-5"></i>
-                            <span>Torre de Controle</span>
-                        </a>
+                <a href="{% url 'trilha:monitor_notificacoes' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if request.resolver_match.url_name == 'monitor_notificacoes' or request.resolver_match.url_name == 'monitor_validar' %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-bell w-5"></i>
+                    <span>Notificacoes</span>
+                    <span id="badge-pendentes" class="ml-auto hidden rounded-full bg-mindhub-red px-2 py-0.5 text-[10px] font-bold text-white"></span>
+                </a>
+                <a href="{% url 'trilha:monitor_funil_progresso' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if request.resolver_match.url_name == 'monitor_funil_progresso' %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-filter w-5"></i>
+                    <span>Torre de Controle</span>
+                </a>
+                <a href="{% url 'financeiro:dashboard' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if 'financeiro' in request.path %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-wallet w-5"></i>
+                    <span>Financeiro</span>
+                </a>
+                <a href="{% url 'trilha:monitor_lista_alunos' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-sitemap w-5"></i>
+                    <span>Gestao de Trilhas</span>
+                </a>
+                {% endif %}
 
-                        <!-- NOVO MODULO FINANCEIRO -->
-                        <a href="{% url 'financeiro:dashboard' %}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'financeiro' in request.path %}bg-mindhub-red text-white{% endif %}">
-                            <i class="fas fa-wallet w-5"></i>
-                            <span>Financeiro</span>
-                        </a>
+                {% if usuario.is_admin or usuario.is_monitor or usuario.is_comercial %}
+                <a href="{% url 'comercial:cadastros' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if 'comercial/cadastros' in request.path %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-address-card w-5"></i>
+                    <span>Central de Cadastros</span>
+                </a>
+                {% endif %}
 
-                        <a href="{% url 'trilha:monitor_lista_alunos' %}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if request.resolver_match.url_name == 'monitor_lista_alunos' %}bg-mindhub-red text-white{% endif %}">
-                            <i class="fas fa-sitemap w-5"></i>
-                            <span>Gestão de Trilhas</span>
-                        </a>
-                        {% endif %}
-
-                        <a href="{% url 'usuarios:gerenciar_acessos' %}"
-                            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-mindhub-gray/30 hover:text-white transition-smooth {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
-                            <i class="fas fa-users w-5"></i>
-                            <span>Gerenciar Acessos</span>
-                        </a>
+                <a href="{% url 'usuarios:gerenciar_acessos' %}"
+                    class="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-smooth hover:bg-mindhub-gray/30 hover:text-white {% if 'gerenciar' in request.path or 'cadastrar' in request.path or 'editar' in request.path %}bg-mindhub-red text-white{% endif %}">
+                    <i class="fas fa-users w-5"></i>
+                    <span>Gerenciar Acessos</span>
+                </a>
             </nav>
         </div>
 
-        <!-- User Info -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-mindhub-gray/30">
+        <div class="absolute bottom-0 left-0 right-0 border-t border-mindhub-gray/30 p-6">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-mindhub-gray rounded-full flex items-center justify-center">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-mindhub-gray">
                     <i class="fas fa-user text-gray-400"></i>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate">{{ usuario.nome|default:usuario.email }}</p>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-white">{{ usuario.nome|default:usuario.email }}</p>
                     <p class="text-xs text-gray-400">{{ usuario.role }}</p>
                 </div>
-                <a href="/logout/" class="text-gray-400 hover:text-mindhub-red transition-smooth">
+                <a href="/logout/" class="text-gray-400 transition-smooth hover:text-mindhub-red">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="ml-64 min-h-screen">
-        <!-- Header -->
-        <header class="h-16 border-b border-mindhub-gray/30 flex items-center justify-between px-6">
+        <header class="flex h-16 items-center justify-between border-b border-mindhub-gray/30 px-6">
             <h2 class="text-xl font-semibold text-white">{{ page_title }}</h2>
             <div class="flex items-center gap-4">
-                <button id="btn-refresh" class="text-gray-400 hover:text-white transition-smooth"
-                    title="Atualizar dados">
+                <button id="btn-refresh" class="text-gray-400 transition-smooth hover:text-white" title="Atualizar dados">
                     <i class="fas fa-sync-alt"></i>
                 </button>
                 <span class="text-sm text-gray-400" id="last-update">Carregando...</span>
             </div>
         </header>
 
-        <!-- Page Content -->
         <div class="p-6">
             {% block content %}{% endblock %}
         </div>
     </main>
 
-    <!-- Drawer (será preenchido pelo JS) -->
-    <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
-    <aside id="drawer"
-        class="drawer fixed right-0 top-0 h-full w-96 bg-mindhub-darker border-l border-mindhub-gray/30 z-50 overflow-y-auto">
-        <div id="drawer-content" class="p-6">
-            <!-- Conteúdo dinâmico -->
-        </div>
+    <div id="drawer-overlay" class="fixed inset-0 z-40 hidden bg-black/50"></div>
+    <aside id="drawer" class="drawer fixed right-0 top-0 z-50 h-full w-96 overflow-y-auto border-l border-mindhub-gray/30 bg-mindhub-darker">
+        <div id="drawer-content" class="p-6"></div>
     </aside>
 
-    <!-- Tooltip -->
     <div id="tooltip" class="tooltip"></div>
 
     <script>
-        // Atualiza badge de pendentes
         async function atualizarBadgePendentes() {
             try {
-                const response = await fetch('/api/monitor/submissoes-pendentes/');
+                const response = await fetch('/comercial/api/notificacoes/total/');
                 const data = await response.json();
                 const badge = document.getElementById('badge-pendentes');
+                if (!badge) {
+                    return;
+                }
                 if (data.total > 0) {
                     badge.textContent = data.total;
                     badge.classList.remove('hidden');
@@ -236,7 +217,6 @@
             }
         }
 
-        // Drawer functions
         function openDrawer() {
             document.getElementById('drawer').classList.add('open');
             document.getElementById('drawer-overlay').classList.remove('hidden');
@@ -247,21 +227,17 @@
             document.getElementById('drawer-overlay').classList.add('hidden');
         }
 
-        document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
-
-        // Atualiza timestamp
         function updateTimestamp() {
             const now = new Date();
-            document.getElementById('last-update').textContent =
-                `Atualizado: ${now.toLocaleTimeString('pt-BR')}`;
+            document.getElementById('last-update').textContent = `Atualizado: ${now.toLocaleTimeString('pt-BR')}`;
         }
 
-        // Init
+        document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+
         document.addEventListener('DOMContentLoaded', () => {
             atualizarBadgePendentes();
             updateTimestamp();
 
-            // Refresh button
             document.getElementById('btn-refresh').addEventListener('click', () => {
                 if (typeof refreshData === 'function') {
                     refreshData();
@@ -270,7 +246,6 @@
             });
         });
 
-        // Auto-refresh a cada 30 segundos
         setInterval(() => {
             atualizarBadgePendentes();
         }, 30000);
@@ -278,5 +253,4 @@
 
     {% block extra_js %}{% endblock %}
 </body>
-
 </html>

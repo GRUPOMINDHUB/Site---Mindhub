@@ -2,7 +2,7 @@
 URLs do app Trilha - Mindhub OS.
 """
 from django.urls import path
-from . import views, api
+from . import views, api, notification_views
 
 app_name = 'trilha'
 
@@ -10,7 +10,8 @@ urlpatterns = [
     # Views (páginas)
     path('monitor/', views.monitor_dashboard, name='monitor_dashboard'),
     path('monitor/graph/', views.monitor_graph, name='monitor_graph'),
-    path('monitor/validar/', views.monitor_validar, name='monitor_validar'),
+    path('monitor/notificacoes/', notification_views.monitor_notificacoes, name='monitor_notificacoes'),
+    path('monitor/validar/', notification_views.monitor_notificacoes, name='monitor_validar'),
     path('monitor/alunos/', views.monitor_lista_alunos, name='monitor_lista_alunos'),
     path('monitor/funil/', views.monitor_funil_progresso, name='monitor_funil_progresso'),
     path('gerenciar/<int:aluno_id>/', views.gerenciar_trilha, name='gerenciar_trilha'),

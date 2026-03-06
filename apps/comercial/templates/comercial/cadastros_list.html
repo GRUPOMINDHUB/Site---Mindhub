@@ -1,0 +1,109 @@
+{% extends 'trilha/base_monitor.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(227,6,19,0.18),_transparent_30%),linear-gradient(135deg,_rgba(18,18,18,1),_rgba(8,8,8,1))] p-6 shadow-2xl">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-3xl">
+                <p class="text-xs font-semibold uppercase tracking-[0.26em] text-red-200/70">Central de Cadastros</p>
+                <h1 class="mt-3 text-3xl font-black text-white">Onboarding, ficha empresarial e governanca comercial.</h1>
+                <p class="mt-3 text-sm leading-6 text-zinc-300">
+                    Comercial estrutura a entrada, monitor acompanha a ficha completa e ADM Master aprova renegociacoes financeiras.
+                </p>
+            </div>
+            {% if usuario.is_admin or usuario.is_comercial %}
+            <a href="{% url 'comercial:cadastro_novo' %}"
+                class="rounded-2xl border border-mindhub-red/40 bg-mindhub-red px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+                Novo cadastro
+            </a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="grid gap-4 md:grid-cols-4">
+        <article class="rounded-2xl border border-white/10 bg-[#121212] p-5">
+            <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Alunos</p>
+            <p class="mt-3 text-3xl font-black text-white">{{ resumo.total_alunos }}</p>
+        </article>
+        <article class="rounded-2xl border border-white/10 bg-[#121212] p-5">
+            <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Com perfil</p>
+            <p class="mt-3 text-3xl font-black text-white">{{ resumo.com_perfil }}</p>
+        </article>
+        <article class="rounded-2xl border border-white/10 bg-[#121212] p-5">
+            <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Com contrato</p>
+            <p class="mt-3 text-3xl font-black text-white">{{ resumo.com_contrato }}</p>
+        </article>
+        <article class="rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
+            <p class="text-xs uppercase tracking-[0.2em] text-red-200/80">Onboarding pendente</p>
+            <p class="mt-3 text-3xl font-black text-white">{{ resumo.onboarding_pendente }}</p>
+        </article>
+    </section>
+
+    <section class="overflow-hidden rounded-[28px] border border-white/10 bg-[#0f0f0f] shadow-2xl">
+        <div class="border-b border-white/10 px-5 py-4">
+            <h2 class="text-lg font-bold text-white">Carteira de mentorados</h2>
+            <p class="mt-1 text-sm text-zinc-500">Abra a ficha para consultar dados empresariais, diagnostico, financeiro e historico.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-white/5">
+                <thead class="bg-white/[0.03]">
+                    <tr class="text-left text-xs uppercase tracking-[0.22em] text-zinc-500">
+                        <th class="px-5 py-4">Aluno</th>
+                        <th class="px-5 py-4">Empresa</th>
+                        <th class="px-5 py-4">Monitor</th>
+                        <th class="px-5 py-4">Contrato</th>
+                        <th class="px-5 py-4 text-right">Acao</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for aluno in cadastros %}
+                    <tr class="transition hover:bg-white/[0.03]">
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-white">{{ aluno.nome|default:aluno.email }}</p>
+                            <p class="mt-1 text-sm text-zinc-500">{{ aluno.email }}</p>
+                        </td>
+                        <td class="px-5 py-4 text-sm text-zinc-300">
+                            {% if aluno.perfil_empresarial %}
+                            {{ aluno.perfil_empresarial.nome_empresa }}
+                            {% else %}
+                            <span class="text-zinc-600">Nao cadastrado</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-sm text-zinc-300">
+                            {% if aluno.monitor_responsavel %}
+                            {{ aluno.monitor_responsavel.nome|default:aluno.monitor_responsavel.email }}
+                            {% else %}
+                            <span class="text-zinc-600">Sem monitor</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-sm">
+                            {% if aluno.contrato %}
+                            <span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-100">
+                                {{ aluno.contrato.status }}
+                            </span>
+                            {% else %}
+                            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300">
+                                Sem contrato
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            <a href="{% url 'comercial:cadastro_detalhe' aluno.id %}"
+                                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                                Abrir ficha
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-12 text-center text-zinc-500">
+                            Nenhum aluno encontrado nesta carteira.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

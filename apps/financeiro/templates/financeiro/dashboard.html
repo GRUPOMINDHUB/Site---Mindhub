@@ -1,268 +1,174 @@
 {% extends 'trilha/base_monitor.html' %}
-{% load static %}
 
 {% block content %}
-<div class="space-y-6 animate-fade-in relative z-10 w-full min-h-screen">
+<div class="space-y-6">
+    <section class="relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(227,6,19,0.28),_transparent_35%),linear-gradient(135deg,_rgba(18,18,18,1),_rgba(8,8,8,1))] p-6 shadow-2xl">
+        <div class="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(135deg,_rgba(227,6,19,0.08),_transparent)]"></div>
+        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div class="max-w-3xl">
+                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-red-200/70">Central Financeira</p>
+                <h1 class="mt-3 text-3xl font-black text-white">Controle de pagamentos com farol de risco e previsibilidade.</h1>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
+                    Acompanha carteira ativa, identifica atrasos, bloqueia inadimplentes severos na trilha e mantém a operação pronta para cobrança via WhatsApp.
+                </p>
+            </div>
 
-    <!-- Cabeçalho de Ações e Filtros Globais -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-        <p class="text-gray-400 text-sm mt-1">Gestão de assinaturas, controle de inadimplência e projeções mensais.</p>
+            <div class="grid w-full gap-3 sm:grid-cols-3 lg:w-auto">
+                <div class="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 backdrop-blur">
+                    <p class="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Alunos Ativos</p>
+                    <p class="mt-2 text-2xl font-black text-white">{{ metrics.total_ativos }}</p>
+                </div>
+                <div class="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 backdrop-blur">
+                    <p class="text-[11px] uppercase tracking-[0.22em] text-red-200/80">% Inadimplentes</p>
+                    <p class="mt-2 text-2xl font-black text-white">{{ metrics.pct_inadimplentes }}%</p>
+                </div>
+                <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 backdrop-blur">
+                    <p class="text-[11px] uppercase tracking-[0.22em] text-emerald-200/80">Previsibilidade</p>
+                    <p class="mt-2 text-2xl font-black text-white">R$ {{ metrics.previsibilidade_proximo_periodo|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <div class="flex flex-wrap items-center gap-3">
-            <!-- Period Filter -->
-            <form method="GET"
-                class="flex items-center gap-2 m-0 bg-black/40 backdrop-blur-sm rounded-lg border border-white/10 p-1 pl-3 shadow-xl">
-                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider"><i
-                        class="fas fa-calendar-alt text-mindhub-red mr-1"></i> Período:</span>
-                <select name="periodo" onchange="this.form.submit()"
-                    class="bg-transparent border-none text-white text-sm font-bold focus:ring-0 cursor-pointer outline-none">
+    <section class="flex flex-col gap-4 rounded-[26px] border border-white/10 bg-black/30 p-4 backdrop-blur xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex flex-wrap gap-2">
+            <button type="button" id="tab-btn-overview" onclick="switchTab('overview')"
+                class="rounded-full border border-[#e30613]/40 bg-[#e30613] px-4 py-2 text-sm font-semibold text-white transition">
+                Visao Geral
+            </button>
+            <button type="button" id="tab-btn-farol" onclick="switchTab('farol')"
+                class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-white/10 hover:text-white">
+                Farol e Projecao
+            </button>
+        </div>
 
-                    {% if metrics.periodo_selecionado == 'mensal' %}
-                    <option value="mensal" class="bg-mindhub-dark text-white" selected>Mês Atual</option>
-                    {% else %}
-                    <option value="mensal" class="bg-mindhub-dark text-white">Mês Atual</option>
-                    {% endif %}
-
-                    {% if metrics.periodo_selecionado == 'trimestral' %}
-                    <option value="trimestral" class="bg-mindhub-dark text-white" selected>Trimestre Atual</option>
-                    {% else %}
-                    <option value="trimestral" class="bg-mindhub-dark text-white">Trimestre Atual</option>
-                    {% endif %}
-
-                    {% if metrics.periodo_selecionado == 'semestral' %}
-                    <option value="semestral" class="bg-mindhub-dark text-white" selected>Semestre Atual</option>
-                    {% else %}
-                    <option value="semestral" class="bg-mindhub-dark text-white">Semestre Atual</option>
-                    {% endif %}
-
-                    {% if metrics.periodo_selecionado == 'anual' %}
-                    <option value="anual" class="bg-mindhub-dark text-white" selected>Ano Atual</option>
-                    {% else %}
-                    <option value="anual" class="bg-mindhub-dark text-white">Ano Atual</option>
-                    {% endif %}
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <form method="get" class="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#121212] px-4 py-2">
+                <label for="periodo" class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Periodo</label>
+                <select id="periodo" name="periodo" onchange="this.form.submit()"
+                    class="border-0 bg-transparent text-sm font-medium text-white focus:outline-none focus:ring-0">
+                    {% for opcao in periodo_opcoes %}
+                    <option value="{{ opcao.value }}" {% if opcao.value == metrics.periodo_selecionado %}selected{% endif %} class="bg-[#121212]">
+                        {{ opcao.label }}
+                    </option>
+                    {% endfor %}
                 </select>
             </form>
 
-            <button onclick="baixarRelatorioPDF()"
-                class="bg-white/10 hover:bg-white/20 text-white font-medium py-2 px-4 rounded-lg border border-white/20 transition-all flex items-center gap-2 text-sm shadow-xl backdrop-blur-sm">
-                <i class="fas fa-file-pdf text-red-400"></i> Exportar
-            </button>
-            {% if usuario.is_admin %}
-            <a href="{% url 'admin:financeiro_contrato_changelist' %}" target="_blank"
-                class="bg-mindhub-red hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg shadow-xl shadow-mindhub-red/20 transition-all text-sm flex items-center gap-2">
-                <i class="fas fa-cog"></i> Admin
-            </a>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- NavBar de Abas -->
-    <div class="flex border-b border-white/10 mb-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
-        <button onclick="switchTab('aba-visao-geral')" id="btn-aba-visao-geral"
-            class="px-5 py-3 border-b-2 border-mindhub-red text-white font-bold text-sm focus:outline-none transition-colors">
-            Visão Geral & Faturas</button>
-        <button onclick="switchTab('aba-projecoes')" id="btn-aba-projecoes"
-            class="px-5 py-3 border-b-2 border-transparent text-gray-400 hover:text-white font-bold text-sm focus:outline-none transition-colors">
-            Farol de Inadimplência & Projeções</button>
-    </div>
-
-    <!-- Container do Relatório (Usado para o PDF) -->
-    <div id="relatorio-financeiro-container" class="space-y-6">
-
-        <!-- ABA 2: SESSÃO 1: Métricas Globais (Cards) -->
-        <div id="aba-projecoes" class="hidden animate-fade-in">
-            <div
-                class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-2">
-                <h2 class="text-lg font-bold text-white"><i class="fas fa-chart-line text-mindhub-red mr-2"></i> Farol
-                    de Assinaturas & Projeções</h2>
-                <span class="text-xs text-gray-400 font-medium bg-white/5 px-2 py-1 rounded">
-                    Base de Cálculo: {{ metrics.data_inicio_filtro }} até {{ metrics.data_fim_filtro }}
-                </span>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="baixarRelatorioPDF()"
+                    class="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500/20">
+                    Baixar Relatorio
+                </button>
+                {% if usuario.is_admin %}
+                <a href="{% url 'admin:financeiro_contrato_changelist' %}" target="_blank"
+                    class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                    Admin
+                </a>
+                {% endif %}
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
+        </div>
+    </section>
 
-                <!-- Alunos Ativos -->
-                <div
-                    class="bg-black/40 backdrop-blur-md rounded-xl p-5 border border-white/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]">
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total Ativos</p>
-                        <i class="fas fa-users text-blue-400 opacity-80"></i>
-                    </div>
-                    <h3 class="text-3xl font-black text-white">{{ metrics.total_ativos }}</h3>
-                    <p class="text-xs text-gray-500 mt-2">Alunos com contratos ativos</p>
-                </div>
-
-                <!-- Faturamento Presumido -->
-                <div
-                    class="bg-black/40 backdrop-blur-md rounded-xl p-5 border border-white/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] relative overflow-hidden">
-                    <div class="absolute inset-x-0 bottom-0 h-1 bg-green-500/50"></div>
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Receita Prevista</p>
-                        <i class="fas fa-money-bill-wave text-green-400 opacity-80"></i>
-                    </div>
-                    <h3 class="text-2xl font-black text-white">R$ {{ metrics.faturamento_presumido|floatformat:2 }}</h3>
-                    <p class="text-xs text-gray-500 mt-2">Soma de vencimentos no mês</p>
-                </div>
-
-                <!-- Inadimplentes (Crítico) -->
-                <div
-                    class="bg-mindhub-dark backdrop-blur-md rounded-xl p-5 border border-mindhub-red/30 shadow-[0_4px_20px_-4px_rgba(227,6,19,0.2)] relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-mindhub-red/5 group-hover:bg-mindhub-red/10 transition-colors">
-                    </div>
-                    <div class="absolute inset-x-0 bottom-0 h-1 bg-mindhub-red"></div>
-
-                    <div class="flex justify-between items-start mb-2 relative z-10">
-                        <p class="text-mindhub-red text-xs font-semibold uppercase tracking-wider">Inadimplentes</p>
-                        <i class="fas fa-exclamation-triangle text-mindhub-red opacity-80"></i>
-                    </div>
-                    <div class="flex items-baseline gap-2 relative z-10">
-                        <h3 class="text-3xl font-black text-white">{{ metrics.pct_inadimplentes }}%</h3>
-                        <span class="text-sm font-medium text-gray-400">dos alunos</span>
-                    </div>
-                    <p class="text-xs text-mindhub-red/80 mt-2 relative z-10 font-medium">8+ dias de atraso | Presos no
-                        Hangar</p>
-                    <div class="mt-2 text-xs font-bold text-white bg-mindhub-red/20 inline-block px-2 py-1 rounded">
-                        R$ {{ metrics.valor_inadimplente|floatformat:2 }} retidos
-                    </div>
-                </div>
-
-                <!-- Em Atraso (Alerta) -->
-                <div
-                    class="bg-black/40 backdrop-blur-md rounded-xl p-5 border border-orange-500/30 relative overflow-hidden h-full">
-                    <div class="absolute inset-x-0 bottom-0 h-1 bg-orange-500/50"></div>
-
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-orange-400 text-xs font-semibold uppercase tracking-wider">Em Atraso (1 a 7d)</p>
-                        <i class="fas fa-clock text-orange-400 opacity-80"></i>
-                    </div>
-                    <h3 class="text-3xl font-black text-white">{{ metrics.pct_atrasados }}%</h3>
-                    <div class="mt-2 text-xs font-bold text-white bg-orange-500/20 inline-block px-2 py-1 rounded">
-                        R$ {{ metrics.valor_em_atraso|floatformat:2 }} pendentes
-                    </div>
-                </div>
-
-                <!-- Cancelados -->
-                <div
-                    class="bg-black/40 backdrop-blur-md rounded-xl p-5 border border-white/10 relative overflow-hidden h-full">
-                    <div class="absolute inset-x-0 bottom-0 h-1 bg-gray-600/50"></div>
-                    <div class="flex justify-between items-start mb-2">
-                        <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Churn (Cancelados)</p>
-                        <i class="fas fa-user-slash text-gray-400 opacity-80"></i>
-                    </div>
-                    <h3 class="text-3xl font-black text-gray-300">{{ metrics.pct_cancelados }}%</h3>
-                </div>
+    <section id="tab-overview" class="space-y-5">
+        <div class="grid gap-4 md:grid-cols-3">
+            <div class="rounded-[24px] border border-white/10 bg-[#121212] p-5">
+                <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">Operacao atual</p>
+                <p class="mt-3 text-xl font-bold text-white">{{ alunos|length }} alunos mapeados nesta carteira.</p>
+                <p class="mt-2 text-sm leading-6 text-zinc-400">Admin ve todos. Monitor ve somente sua base. Comercial fica fora desta central.</p>
+            </div>
+            <div class="rounded-[24px] border border-amber-400/20 bg-amber-400/10 p-5">
+                <p class="text-xs uppercase tracking-[0.22em] text-amber-200/80">Atraso financeiro</p>
+                <p class="mt-3 text-2xl font-black text-white">R$ {{ metrics.valor_em_atraso|floatformat:2 }}</p>
+                <p class="mt-2 text-sm text-amber-100/80">Parcelas abertas entre 1 e 7 dias de atraso.</p>
+            </div>
+            <div class="rounded-[24px] border border-red-500/20 bg-red-500/10 p-5">
+                <p class="text-xs uppercase tracking-[0.22em] text-red-200/80">Risco critico</p>
+                <p class="mt-3 text-2xl font-black text-white">R$ {{ metrics.valor_inadimplente|floatformat:2 }}</p>
+                <p class="mt-2 text-sm text-red-100/80">Parcelas com 8 dias ou mais. A trilha fica bloqueada automaticamente.</p>
             </div>
         </div>
 
-        <!-- ABA 1: SESSÃO 2: Tabela de Alunos -->
-        <div id="aba-visao-geral"
-            class="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fade-in">
-            <!-- Barra de Filtros da Tabela -->
-            <div class="p-4 border-b border-white/10 bg-white/5 flex flex-wrap items-center justify-between gap-4">
-                <h2 class="text-white font-bold text-lg"><i class="fas fa-list-ul mr-2 text-mindhub-red"></i> Listagem
-                    de Faturas</h2>
+        <div class="rounded-[28px] border border-white/10 bg-[#0f0f0f] shadow-2xl">
+            <div class="flex flex-col gap-4 border-b border-white/10 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Ficha financeira por aluno</h2>
+                    <p class="mt-1 text-sm text-zinc-400">Clique na linha para abrir o contrato completo, dar baixa e registrar comprovantes.</p>
+                </div>
 
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <select id="filtroStatusFinanceiro" onchange="aplicarFiltroTabela()"
-                        class="bg-mindhub-dark border border-white/10 text-white text-xs rounded p-2 focus:ring-mindhub-red outline-none">
-                        <option value="all">Ver Todos os Status</option>
-                        <option value="INADIMPLENTE">Inadimplentes (CRÍTICO)</option>
-                        <option value="ATRASADO">Em Atraso</option>
-                        <option value="PENDENTE">Pendentes do Mês</option>
-                        <option value="PAGO">Pagos (Quitados)</option>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                    <select id="overview-status-filter" onchange="aplicarFiltroTabela()"
+                        class="rounded-2xl border border-white/10 bg-[#121212] px-3 py-2 text-sm text-white focus:border-[#e30613] focus:outline-none">
+                        <option value="all">Todos os status</option>
+                        <option value="PENDENTE">Pendentes</option>
+                        <option value="ATRASADO">Atrasados</option>
+                        <option value="INADIMPLENTE">Inadimplentes</option>
+                        <option value="PAGO">Pagos</option>
+                        <option value="CANCELADO">Cancelados</option>
+                        <option value="SEM_CONTRATO">Sem contrato</option>
                     </select>
-
-                    <div class="relative flex-1">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                        <input type="text" id="filtroBuscaFinanceira" onkeyup="aplicarFiltroTabela()"
-                            placeholder="Buscar aluno..."
-                            class="w-full bg-black/40 border border-white/10 text-white text-xs rounded pl-8 pr-3 py-2 focus:border-mindhub-red focus:ring-1 focus:ring-mindhub-red outline-none">
-                    </div>
+                    <input id="overview-search-filter" type="search" oninput="aplicarFiltroTabela()" placeholder="Buscar aluno ou email"
+                        class="rounded-2xl border border-white/10 bg-[#121212] px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-[#e30613] focus:outline-none">
                 </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse" id="tabelaFinanceiro">
-                    <thead>
-                        <tr class="bg-black/50 text-gray-400 text-xs uppercase tracking-wider border-b border-white/10">
-                            <th class="p-4 font-semibold">Aluno</th>
-                            <th class="p-4 font-semibold">Parcela Num</th>
-                            <th class="p-4 font-semibold">Vencimento</th>
-                            <th class="p-4 font-semibold">Valor</th>
-                            <th class="p-4 font-semibold text-center">Status</th>
-                            <th class="p-4 font-semibold text-right">Ação</th>
+                <table class="min-w-full divide-y divide-white/5">
+                    <thead class="bg-white/[0.03]">
+                        <tr class="text-left text-xs uppercase tracking-[0.22em] text-zinc-500">
+                            <th class="px-5 py-4">Aluno</th>
+                            <th class="px-5 py-4">Monitor</th>
+                            <th class="px-5 py-4">Parcela Atual</th>
+                            <th class="px-5 py-4">Status</th>
+                            <th class="px-5 py-4 text-right">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5">
+                    <tbody id="overview-table-body" class="divide-y divide-white/5">
                         {% for aluno in alunos %}
-                        <tr class="aluno-fin-row hover:bg-white/5 transition-colors group cursor-pointer"
-                            onclick="abrirFichaAluno({{ aluno.id }})" data-status="{{ aluno.status_badge }}"
-                            data-search="{{ aluno.nome|lower }} {{ aluno.email|lower }}">
-
-                            <td class="p-4">
-                                <p class="text-white font-medium text-sm">{{ aluno.nome }}</p>
-                                <p class="text-gray-500 text-xs mt-0.5">{{ aluno.email }}</p>
+                        <tr id="aluno-row-{{ aluno.id }}"
+                            data-aluno-id="{{ aluno.id }}"
+                            data-status="{{ aluno.status_codigo }}"
+                            data-search="{{ aluno.nome|lower }} {{ aluno.email|lower }}"
+                            class="cursor-pointer transition hover:bg-white/[0.03]"
+                            onclick="abrirFichaAluno({{ aluno.id }})">
+                            <td class="px-5 py-4">
+                                <p class="font-semibold text-white">{{ aluno.nome }}</p>
+                                <p class="mt-1 text-sm text-zinc-500">{{ aluno.email }}</p>
                             </td>
-
-                            <td class="p-4">
-                                {% if aluno.parcela_atual %}
-                                <span class="text-gray-300 font-medium text-sm">#{{ aluno.parcela_atual.numero }}</span>
-                                {% else %}
-                                <span class="text-gray-600 text-sm">-</span>
-                                {% endif %}
+                            <td class="px-5 py-4 text-sm text-zinc-300">
+                                {{ aluno.monitor_nome }}
                             </td>
-
-                            <td class="p-4">
-                                {% if aluno.parcela_atual %}
-                                <span class="text-gray-300 text-sm">
-                                    {{ aluno.parcela_atual.vencimento|date:"d/m/Y" }}
-                                </span>
-                                {% else %}
-                                <span class="text-gray-600 text-sm">-</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="p-4">
-                                {% if aluno.parcela_atual %}
-                                <span class="text-white font-bold text-sm">
-                                    R$ {{ aluno.parcela_atual.valor|floatformat:2 }}
-                                </span>
-                                {% else %}
-                                <span class="text-gray-600 text-sm">-</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="p-4 text-center">
-                                <span
-                                    class="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider {{ aluno.status_color }}">
-                                    <!-- Icones Dinamicos baseado no texto do badge -->
-                                    {% if aluno.status_badge == 'INADIMPLENTE' %}
-                                    <i class="fas fa-ban mr-1.5"></i>
-                                    {% elif aluno.status_badge == 'ATRASADO' %}
-                                    <i class="fas fa-clock mr-1.5"></i>
-                                    {% elif aluno.status_badge == 'PAGO' or aluno.status_badge == 'Quitado' %}
-                                    <i class="fas fa-check-circle mr-1.5"></i>
-                                    {% elif aluno.status_badge == 'PENDENTE' %}
-                                    <i class="fas fa-hourglass-half mr-1.5"></i>
+                            <td class="px-5 py-4">
+                                <div id="row-parcela-{{ aluno.id }}">
+                                    {% if aluno.parcela_atual %}
+                                    <p class="font-semibold text-white">R$ {{ aluno.parcela_atual.valor|floatformat:2 }}</p>
+                                    <p class="mt-1 text-sm text-zinc-500">
+                                        Parcela {{ aluno.parcela_atual.numero }} · {{ aluno.parcela_atual.data_vencimento_br }}
+                                    </p>
                                     {% else %}
-                                    <i class="fas fa-minus mr-1.5"></i>
+                                    <p class="font-semibold text-zinc-400">Sem parcela em aberto</p>
+                                    <p class="mt-1 text-sm text-zinc-600">Contrato quitado, cancelado ou inexistente.</p>
                                     {% endif %}
-                                    {{ aluno.status_badge }}
+                                </div>
+                            </td>
+                            <td class="px-5 py-4">
+                                <span id="row-status-{{ aluno.id }}"
+                                    class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] {{ aluno.status_badge_class }}">
+                                    <span class="h-2 w-2 rounded-full {{ aluno.status_dot_class }}"></span>
+                                    <span>{{ aluno.status_label }}</span>
                                 </span>
                             </td>
-
-                            <td class="p-4 text-right">
-                                <button
-                                    class="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-lg"
-                                    title="Ver Detalhes Financeiros">
-                                    <i class="fas fa-folder-open"></i> Abrir Ficha
+                            <td class="px-5 py-4 text-right">
+                                <button type="button"
+                                    class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                                    Abrir ficha
                                 </button>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="p-8 text-center text-gray-500">
-                                Nenhum aluno encontrado na sua alçada financeira.
+                            <td colspan="5" class="px-5 py-12 text-center text-zinc-500">
+                                Nenhum aluno encontrado para esta carteira.
                             </td>
                         </tr>
                         {% endfor %}
@@ -270,396 +176,518 @@
                 </table>
             </div>
         </div>
+    </section>
 
-    </div>
+    <section id="tab-farol" class="hidden space-y-6">
+        <div id="relatorio-financeiro" class="space-y-6">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-[24px] border border-white/10 bg-[#121212] p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Total ativos</p>
+                    <p class="mt-3 text-3xl font-black text-white">{{ metrics.total_ativos }}</p>
+                    <p class="mt-2 text-sm text-zinc-400">Contratos ativos nesta carteira.</p>
+                </article>
+                <article class="rounded-[24px] border border-amber-400/20 bg-amber-400/10 p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-amber-200/80">% atrasados</p>
+                    <p class="mt-3 text-3xl font-black text-white">{{ metrics.pct_atrasados }}%</p>
+                    <p class="mt-2 text-sm text-amber-100/80">Atraso entre 1 e 7 dias.</p>
+                </article>
+                <article class="rounded-[24px] border border-red-500/20 bg-red-500/10 p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-red-200/80">% inadimplentes</p>
+                    <p class="mt-3 text-3xl font-black text-white">{{ metrics.pct_inadimplentes }}%</p>
+                    <p class="mt-2 text-sm text-red-100/80">Atraso acima de 8 dias.</p>
+                </article>
+                <article class="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">% cancelados</p>
+                    <p class="mt-3 text-3xl font-black text-white">{{ metrics.pct_cancelados }}%</p>
+                    <p class="mt-2 text-sm text-zinc-400">Contratos cancelados ou desistentes.</p>
+                </article>
+                <article class="rounded-[24px] border border-emerald-500/20 bg-emerald-500/10 p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Faturamento presumido</p>
+                    <p class="mt-3 text-3xl font-black text-white">R$ {{ metrics.faturamento_presumido|floatformat:2 }}</p>
+                    <p class="mt-2 text-sm text-emerald-100/80">{{ metrics.data_inicio_filtro }} ate {{ metrics.data_fim_filtro }}</p>
+                </article>
+                <article class="rounded-[24px] border border-amber-400/20 bg-[#1a1407] p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-amber-200/80">Valor em atraso</p>
+                    <p class="mt-3 text-3xl font-black text-white">R$ {{ metrics.valor_em_atraso|floatformat:2 }}</p>
+                    <p class="mt-2 text-sm text-amber-100/80">Pressao financeira do ciclo atual.</p>
+                </article>
+                <article class="rounded-[24px] border border-red-500/20 bg-[#1a0b0d] p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-red-200/80">Valor inadimplente</p>
+                    <p class="mt-3 text-3xl font-black text-white">R$ {{ metrics.valor_inadimplente|floatformat:2 }}</p>
+                    <p class="mt-2 text-sm text-red-100/80">Montante em bloqueio severo.</p>
+                </article>
+                <article class="rounded-[24px] border border-[#e30613]/20 bg-[linear-gradient(135deg,_rgba(227,6,19,0.18),_rgba(18,18,18,0.4))] p-5">
+                    <p class="text-xs uppercase tracking-[0.2em] text-red-100/80">Previsibilidade do proximo periodo</p>
+                    <p class="mt-3 text-3xl font-black text-white">R$ {{ metrics.previsibilidade_proximo_periodo|floatformat:2 }}</p>
+                    <p class="mt-2 text-sm text-zinc-200/80">{{ metrics.proximo_inicio_filtro }} ate {{ metrics.proximo_fim_filtro }}</p>
+                </article>
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+                <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f]">
+                    <div class="border-b border-white/10 px-5 py-4">
+                        <h2 class="text-lg font-bold text-white">Farol de inadimplencia</h2>
+                        <p class="mt-1 text-sm text-zinc-400">Contas que exigem acompanhamento imediato.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-white/5">
+                            <thead class="bg-white/[0.03]">
+                                <tr class="text-left text-xs uppercase tracking-[0.22em] text-zinc-500">
+                                    <th class="px-5 py-4">Aluno</th>
+                                    <th class="px-5 py-4">Parcela</th>
+                                    <th class="px-5 py-4">Status</th>
+                                    <th class="px-5 py-4">Acao</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                {% for aluno in farol %}
+                                <tr class="cursor-pointer transition hover:bg-white/[0.03]" onclick="abrirFichaAluno({{ aluno.id }})">
+                                    <td class="px-5 py-4">
+                                        <p class="font-semibold text-white">{{ aluno.nome }}</p>
+                                        <p class="mt-1 text-sm text-zinc-500">{{ aluno.monitor_nome }}</p>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        {% if aluno.parcela_atual %}
+                                        <p class="font-semibold text-white">R$ {{ aluno.parcela_atual.valor|floatformat:2 }}</p>
+                                        <p class="mt-1 text-sm text-zinc-500">Parcela {{ aluno.parcela_atual.numero }} · {{ aluno.parcela_atual.data_vencimento_br }}</p>
+                                        {% else %}
+                                        <p class="text-sm text-zinc-500">Sem parcela aberta</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] {{ aluno.status_badge_class }}">
+                                            <span class="h-2 w-2 rounded-full {{ aluno.status_dot_class }}"></span>
+                                            <span>{{ aluno.status_label }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <button type="button"
+                                            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                                            Abrir ficha
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-5 py-10 text-center text-zinc-500">
+                                        Nenhum caso critico no periodo atual.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="rounded-[28px] border border-white/10 bg-[#111111] p-5">
+                    <p class="text-xs uppercase tracking-[0.24em] text-zinc-500">Leitura executiva</p>
+                    <h3 class="mt-3 text-2xl font-black text-white">{{ metrics.periodo_label }} atual em foco.</h3>
+                    <div class="mt-5 space-y-4">
+                        <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            <p class="text-sm font-semibold text-white">Base do periodo</p>
+                            <p class="mt-2 text-sm leading-6 text-zinc-400">
+                                A receita presumida considera todas as parcelas com vencimento entre {{ metrics.data_inicio_filtro }} e {{ metrics.data_fim_filtro }} de contratos ativos.
+                            </p>
+                        </div>
+                        <div class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
+                            <p class="text-sm font-semibold text-white">Regra de bloqueio</p>
+                            <p class="mt-2 text-sm leading-6 text-red-100/80">
+                                Qualquer aluno com parcela acima de 8 dias de atraso fica bloqueado nas rotas da trilha e recebe nota de saude critica.
+                            </p>
+                        </div>
+                        <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                            <p class="text-sm font-semibold text-white">Proximo ciclo</p>
+                            <p class="mt-2 text-sm leading-6 text-emerald-100/80">
+                                A previsibilidade do proximo periodo exclui contratos cancelados e alunos com inadimplencia severa no momento da consulta.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
 </div>
 
-<!-- MODAL: Ficha do Aluno -->
-<div id="modalFicha"
-    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
-    <div class="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.8)] scale-95 transition-transform duration-300"
-        id="modalFichaContent">
-
-        <!-- Header Modal -->
-        <div class="p-5 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-2xl">
-            <div>
-                <h3 class="text-white font-bold text-xl flex items-center gap-2">
-                    <i class="fas fa-id-card text-mindhub-red"></i>
-                    Ficha Financeira: <span id="modalAlunoNome" class="text-gray-300 font-medium">Carregando...</span>
-                </h3>
-            </div>
-            <button onclick="fecharFichaAluno()"
-                class="text-gray-400 hover:text-white bg-black/20 hover:bg-black/40 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-
-        <!-- Body Modal -->
-        <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-
-            <!-- Resumo do Contrato -->
-            <div class="bg-black/30 border border-white/5 rounded-xl p-4 mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+<div id="feedback-toast" class="pointer-events-none fixed right-6 top-6 z-[120] hidden rounded-2xl border border-white/10 bg-[#121212] px-4 py-3 text-sm text-white shadow-2xl"></div>
+<div id="modal-ficha" class="fixed inset-0 z-[110] hidden bg-black/80 p-4 backdrop-blur-sm">
+    <div class="mx-auto flex h-full max-w-6xl items-center justify-center">
+        <div id="modal-card" class="flex max-h-[92vh] w-full scale-95 flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0f0f0f] opacity-0 shadow-[0_30px_80px_rgba(0,0,0,0.55)] transition duration-200">
+            <div class="flex items-start justify-between border-b border-white/10 bg-white/[0.03] px-6 py-5">
                 <div>
-                    <span class="text-gray-500 text-xs block mb-1">Status Contrato</span>
-                    <span id="modalContratoStatus" class="text-white font-bold">-</span>
+                    <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Ficha de Pagamento</p>
+                    <h3 id="modal-aluno-nome" class="mt-2 text-2xl font-black text-white">Carregando...</h3>
+                    <p id="modal-aluno-meta" class="mt-1 text-sm text-zinc-400"></p>
                 </div>
-                <div>
-                    <span class="text-gray-500 text-xs block mb-1">Valor Total</span>
-                    <span id="modalContratoValor" class="text-white font-bold">-</span>
-                </div>
-                <div>
-                    <span class="text-gray-500 text-xs block mb-1">Assinatura</span>
-                    <span id="modalContratoData" class="text-gray-300">-</span>
-                </div>
-                <div>
-                    <span class="text-gray-500 text-xs block mb-1">Observações Globais</span>
-                    <span id="modalContratoObs" class="text-gray-400 text-xs italic">-</span>
-                </div>
+                <button type="button" onclick="fecharFichaAluno()"
+                    class="rounded-full border border-white/10 bg-white/5 p-3 text-zinc-300 transition hover:bg-white/10 hover:text-white">
+                    <span class="sr-only">Fechar</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
-            <h4 class="text-white font-bold mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
-                <i class="fas fa-list-ol text-gray-500"></i> Cronograma de Parcelas
-            </h4>
-
-            <!-- Lista Dinâmica de Parcelas -->
-            <div id="modalParcelasList" class="space-y-4">
-                <div class="animate-pulse flex space-x-4">
-                    <div class="flex-1 space-y-4 py-1">
-                        <div class="h-10 bg-white/10 rounded w-full"></div>
-                        <div class="h-10 bg-white/10 rounded w-full"></div>
-                        <div class="h-10 bg-white/10 rounded w-full"></div>
+            <div class="overflow-y-auto px-6 py-6">
+                <div class="grid gap-4 md:grid-cols-4">
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Status contrato</p>
+                        <p id="modal-contrato-status" class="mt-3 text-lg font-bold text-white">-</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Valor negociado</p>
+                        <p id="modal-contrato-valor" class="mt-3 text-lg font-bold text-white">-</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Assinatura</p>
+                        <p id="modal-contrato-data" class="mt-3 text-lg font-bold text-white">-</p>
+                    </div>
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <p class="text-xs uppercase tracking-[0.2em] text-zinc-500">Observacoes</p>
+                        <p id="modal-contrato-obs" class="mt-3 text-sm leading-6 text-zinc-400">-</p>
                     </div>
                 </div>
-            </div>
 
+                <div class="mt-6">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-lg font-bold text-white">Parcelas</h4>
+                            <p class="text-sm text-zinc-500">Baixa, comprovante, link de pagamento e cobranca pelo WhatsApp.</p>
+                        </div>
+                    </div>
+                    <div id="modal-parcelas" class="space-y-4"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Biblioteca html2pdf (via CDN) -->
+{% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <script>
-    // Tabbed Navigation
-    function switchTab(tabId) {
-        // Esconde tudo
-        document.getElementById('aba-visao-geral').classList.add('hidden');
-        document.getElementById('aba-projecoes').classList.add('hidden');
-
-        // Remove active class
-        document.getElementById('btn-aba-visao-geral').classList.remove('border-mindhub-red', 'text-white');
-        document.getElementById('btn-aba-visao-geral').classList.add('border-transparent', 'text-gray-400');
-        document.getElementById('btn-aba-projecoes').classList.remove('border-mindhub-red', 'text-white');
-        document.getElementById('btn-aba-projecoes').classList.add('border-transparent', 'text-gray-400');
-
-        // Ativa o clicado
-        document.getElementById(tabId).classList.remove('hidden');
-        document.getElementById(`btn-${tabId}`).classList.remove('border-transparent', 'text-gray-400');
-        document.getElementById(`btn-${tabId}`).classList.add('border-mindhub-red', 'text-white');
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(';') : [];
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith(`${name}=`)) {
+                return decodeURIComponent(trimmed.slice(name.length + 1));
+            }
+        }
+        return '';
     }
 
-    // Filtros da Tabela
+    const csrfToken = getCookie('csrftoken');
+    const modalFicha = document.getElementById('modal-ficha');
+    const modalCard = document.getElementById('modal-card');
+    const modalParcelas = document.getElementById('modal-parcelas');
+    let currentAlunoId = null;
+
+    function switchTab(tab) {
+        const overview = document.getElementById('tab-overview');
+        const farol = document.getElementById('tab-farol');
+        const overviewBtn = document.getElementById('tab-btn-overview');
+        const farolBtn = document.getElementById('tab-btn-farol');
+
+        if (tab === 'farol') {
+            overview.classList.add('hidden');
+            farol.classList.remove('hidden');
+            overviewBtn.className = 'rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-white/10 hover:text-white';
+            farolBtn.className = 'rounded-full border border-[#e30613]/40 bg-[#e30613] px-4 py-2 text-sm font-semibold text-white transition';
+            return;
+        }
+
+        farol.classList.add('hidden');
+        overview.classList.remove('hidden');
+        farolBtn.className = 'rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-white/10 hover:text-white';
+        overviewBtn.className = 'rounded-full border border-[#e30613]/40 bg-[#e30613] px-4 py-2 text-sm font-semibold text-white transition';
+    }
+
     function aplicarFiltroTabela() {
-        const _status = document.getElementById('filtroStatusFinanceiro').value;
-        const _busca = document.getElementById('filtroBuscaFinanceira').value.toLowerCase();
+        const busca = (document.getElementById('overview-search-filter').value || '').toLowerCase();
+        const status = document.getElementById('overview-status-filter').value;
+        const rows = document.querySelectorAll('#overview-table-body tr[data-aluno-id]');
 
-        const rows = document.querySelectorAll('.aluno-fin-row');
-
-        rows.forEach(row => {
-            const elStatus = row.getAttribute('data-status');
-            const elBusca = row.getAttribute('data-search');
-
-            const matchStatus = (_status === 'all' || elStatus === _status);
-            const matchBusca = (elBusca.includes(_busca));
-
-            if (matchStatus && matchBusca) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
+        rows.forEach((row) => {
+            const matchBusca = row.dataset.search.includes(busca);
+            const matchStatus = status === 'all' || row.dataset.status === status;
+            row.style.display = matchBusca && matchStatus ? '' : 'none';
         });
     }
 
-    // Modal Dynamics
-    const modalFicha = document.getElementById('modalFicha');
-    const modalContent = document.getElementById('modalFichaContent');
-    const listContainer = document.getElementById('modalParcelasList');
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
-    // Variaveis para Whatsapp Message Builder
-    let currentAlunoNome = "";
-    let currentAlunoTelefone = "";
-    const NOME_MONITOR = "{{ usuario.nome|default:'Monitor' }}";
+    function showToast(message, tone = 'default') {
+        const toast = document.getElementById('feedback-toast');
+        const tones = {
+            default: 'border-white/10 bg-[#121212] text-white',
+            success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-100',
+            error: 'border-red-500/30 bg-red-500/15 text-red-100',
+        };
+
+        toast.className = `pointer-events-none fixed right-6 top-6 z-[120] rounded-2xl px-4 py-3 text-sm shadow-2xl ${tones[tone] || tones.default}`;
+        toast.textContent = message;
+        toast.classList.remove('hidden');
+
+        window.clearTimeout(showToast.timeoutId);
+        showToast.timeoutId = window.setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2600);
+    }
 
     function abrirFichaAluno(alunoId) {
-        // Mostra o Modal
+        currentAlunoId = alunoId;
         modalFicha.classList.remove('hidden');
-        // Usa setTimeout para garantir que a transição do Tailwind funcione
-        setTimeout(() => {
-            modalFicha.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95');
-        }, 10);
+        document.body.classList.add('overflow-hidden');
+        requestAnimationFrame(() => {
+            modalCard.classList.remove('opacity-0', 'scale-95');
+        });
 
-        // Estado de "Carregando"
-        document.getElementById('modalAlunoNome').textContent = "Buscando dados...";
-        listContainer.innerHTML = `<div class="animate-pulse flex space-x-4"><div class="flex-1 space-y-4 py-1"><div class="h-10 bg-white/10 rounded w-full"></div><div class="h-10 bg-white/10 rounded w-full"></div></div></div>`;
+        document.getElementById('modal-aluno-nome').textContent = 'Carregando ficha...';
+        document.getElementById('modal-aluno-meta').textContent = '';
+        modalParcelas.innerHTML = `
+            <div class="rounded-2xl border border-white/10 bg-[#121212] p-6 text-sm text-zinc-400">
+                Buscando contrato e parcelas...
+            </div>
+        `;
 
-        // Fetch na API
         fetch(`/financeiro/api/ficha/${alunoId}/`)
-            .then(response => {
-                if (!response.ok) throw new Error("Erro de permissão ou rede");
-                return response.json();
+            .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    throw new Error(data.error || 'Nao foi possivel carregar a ficha.');
+                }
+                renderizarFicha(data);
             })
-            .then(data => {
-                if (data.error) throw new Error(data.error);
-                renderizarFichaModal(data, alunoId);
-            })
-            .catch(error => {
-                listContainer.innerHTML = `<div class="p-4 bg-mindhub-red/20 text-mindhub-red rounded-lg text-center"><i class="fas fa-exclamation-triangle mb-2 text-xl"></i><p>Erro ao carregar dados financeiros: ${error.message}</p></div>`;
-                document.getElementById('modalAlunoNome').textContent = "Erro";
+            .catch((error) => {
+                showToast(error.message, 'error');
+                modalParcelas.innerHTML = `
+                    <div class="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-sm text-red-100">
+                        ${escapeHtml(error.message)}
+                    </div>
+                `;
             });
     }
 
     function fecharFichaAluno() {
-        modalFicha.classList.add('opacity-0');
-        modalContent.classList.add('scale-95');
-        setTimeout(() => {
+        modalCard.classList.add('opacity-0', 'scale-95');
+        document.body.classList.remove('overflow-hidden');
+        window.setTimeout(() => {
             modalFicha.classList.add('hidden');
-        }, 300); // 300ms = duration-300
+        }, 180);
     }
 
-    function renderizarFichaModal(data, alunoId) {
-        // Seta Variaveis Globais do Aluno pro Zap
-        currentAlunoNome = data.aluno.nome;
-        currentAlunoTelefone = data.aluno.telefone;
+    function renderizarFicha(payload) {
+        document.getElementById('modal-aluno-nome').textContent = payload.aluno.nome;
+        document.getElementById('modal-aluno-meta').textContent = `${payload.aluno.email} · Monitor: ${payload.aluno.monitor_nome}`;
+        document.getElementById('modal-contrato-status').textContent = payload.contrato.status;
+        document.getElementById('modal-contrato-valor').textContent = `R$ ${payload.contrato.valor_total_formatado}`;
+        document.getElementById('modal-contrato-data').textContent = payload.contrato.data_assinatura_br;
+        document.getElementById('modal-contrato-obs').textContent = payload.contrato.observacoes || 'Sem observacoes registradas.';
 
-        // Header e Resumo
-        document.getElementById('modalAlunoNome').textContent = currentAlunoNome;
-
-        const c = data.contrato;
-        document.getElementById('modalContratoStatus').innerHTML = c.status === 'ATIVO' ? '<span class="text-green-500"><i class="fas fa-check-circle"></i> ATIVO</span>' : '<span class="text-gray-500"><i class="fas fa-times-circle"></i> CANCELADO</span>';
-        document.getElementById('modalContratoValor').textContent = `R$ ${parseFloat(c.valor_total).toFixed(2)}`;
-
-        // Format Date YYYY-MM-DD to DD/MM/YYYY safe
-        const d_parts = c.data_assinatura.split('-');
-        document.getElementById('modalContratoData').textContent = `${d_parts[2]}/${d_parts[1]}/${d_parts[0]}`;
-        document.getElementById('modalContratoObs').textContent = c.observacoes || "Nenhuma observação configurada no sistema administrativo.";
-
-        // Lista de Parcelas
-        if (data.parcelas.length === 0) {
-            listContainer.innerHTML = `<div class="text-center p-6 text-gray-500 bg-white/5 rounded-lg border border-dashed border-white/20">Nenhuma parcela cadastrada neste contrato.</div>`;
+        if (!payload.parcelas.length) {
+            modalParcelas.innerHTML = `
+                <div class="rounded-2xl border border-white/10 bg-[#121212] p-6 text-sm text-zinc-500">
+                    Nenhuma parcela cadastrada neste contrato.
+                </div>
+            `;
             return;
         }
 
-        let html = '';
-        const token = '{{ csrf_token }}';
+        modalParcelas.innerHTML = payload.parcelas.map((parcela) => {
+            const comprovanteLink = parcela.comprovante_url
+                ? `<a href="${escapeHtml(parcela.comprovante_url)}" target="_blank" class="text-emerald-300 underline underline-offset-4">Ver comprovante</a>`
+                : '<span class="text-zinc-600">Sem comprovante</span>';
 
-        data.parcelas.forEach(p => {
+            const whatsappButtons = parcela.whatsapp_prev_url || parcela.whatsapp_today_url
+                ? `
+                    <div class="flex flex-wrap gap-2">
+                        ${parcela.whatsapp_prev_url ? `<a href="${escapeHtml(parcela.whatsapp_prev_url)}" target="_blank" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-100 transition hover:bg-emerald-500/25">Cobrar Prev</a>` : ''}
+                        ${parcela.whatsapp_today_url ? `<a href="${escapeHtml(parcela.whatsapp_today_url)}" target="_blank" class="rounded-2xl border border-[#e30613]/30 bg-[#e30613]/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-100 transition hover:bg-[#e30613]/25">Cobrar Hoje</a>` : ''}
+                    </div>
+                `
+                : '<p class="text-xs text-zinc-600">Cadastre um telefone do aluno para habilitar cobranca pelo WhatsApp.</p>';
 
-            // Formatacao Date UI
-            const v_parts = p.data_vencimento.split('-');
-            const v_dateBR = `${v_parts[2]}/${v_parts[1]}/${v_parts[0]}`;
-
-            let statusColor = 'text-gray-500';
-            let statusBg = 'bg-gray-500/10';
-            let icon = 'fas fa-minus';
-
-            if (p.status === 'PAGO') { statusColor = 'text-green-500'; statusBg = 'bg-green-500/10'; icon = 'fas fa-check'; }
-            if (p.status === 'PENDENTE') { statusColor = 'text-yellow-500'; statusBg = 'bg-yellow-500/10'; icon = 'fas fa-clock'; }
-            if (p.status === 'ATRASADO') { statusColor = 'text-orange-500'; statusBg = 'bg-orange-500/10'; icon = 'fas fa-exclamation-circle'; }
-            if (p.status === 'INADIMPLENTE') { statusColor = 'text-mindhub-red'; statusBg = 'bg-mindhub-red/10 border border-mindhub-red/30'; icon = 'fas fa-ban'; }
-            if (p.status === 'CANCELADO') { statusColor = 'text-gray-600'; statusBg = 'bg-black/50 line-through'; icon = 'fas fa-times'; }
-
-            // Zap Message Builder
-            let msgPrev = `Olá, ${currentAlunoNome}! Tudo bem? 😊 Passando para te dar um "alô" preventivo: sua próxima parcela no valor de R$ ${p.valor} vence daqui a dois dias úteis, no dia ${v_dateBR}. \n\n🔑 Chave Pix: biancafraga.mentoria@gmail.com\n🔗 Link: ${p.link || 'A solicitar'}\n\nCaso precise de algo, estou à disposição! Um abraço, ${NOME_MONITOR} | Monitoria`;
-
-            let msgHoje = `Bom dia, ${currentAlunoNome}! Tudo certo? Hoje vence a sua parcela de R$ ${p.valor}. Para facilitar, seguem os dados para pagamento:\n\n🔑 Chave Pix: biancafraga.mentoria@gmail.com\n🔗 Link: ${p.link || 'A solicitar'}\n\nAssim que realizar o pagamento, por favor, me envie o comprovante por aqui para darmos baixa.`;
-
-            let msgAtraso = `Olá, ${currentAlunoNome}. Identificamos que a parcela com vencimento em ${v_dateBR} consta em aberto. Caso já tenha efetuado o pagamento, por favor, desconsidere e nos envie o comprovante. Seguem os dados: Chave Pix: biancafraga.mentoria@gmail.com | Link: ${p.link || 'A solicitar'}`;
-
-            // Buttons Logic
-            let buttonsHtml = '';
-            if (currentAlunoTelefone && (p.status === 'PENDENTE' || p.status === 'ATRASADO' || p.status === 'INADIMPLENTE')) {
-                let msgEncoded = "";
-                let btnLabel = "";
-                let btnColor = "";
-                let btnIcon = "fab fa-whatsapp";
-
-                if (p.status === 'PENDENTE') {
-                    msgEncoded = encodeURIComponent(msgPrev);
-                    btnLabel = "Lembrete";
-                    btnColor = "bg-green-600 hover:bg-green-500";
-                } else if (p.status === 'ATRASADO' || p.status === 'INADIMPLENTE') {
-                    msgEncoded = encodeURIComponent(msgAtraso);
-                    btnLabel = "Cobrar";
-                    btnColor = "bg-mindhub-red hover:bg-red-500";
-                }
-
-                buttonsHtml = `
-                    <a href="https://wa.me/55${currentAlunoTelefone}?text=${msgEncoded}" target="_blank" 
-                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-xl ${btnColor} transition-transform hover:scale-105 active:scale-95">
-                        <i class="${btnIcon} text-sm"></i> ${btnLabel}
-                    </a>
-                `;
-            }
-
-            // O form inline para atualizar a parcela
-            // Se for admin/monitor, pode tentar atualizar.
-            html += `
-                <div class="bg-[#1a1a1a] rounded-xl p-4 border-l-4 border-l-transparent transition-all hover:bg-[#222] ${statusBg}" id="parcela-card-${p.id}">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        
-                        <!-- Info Base -->
-                        <div class="flex items-center gap-4 min-w-[200px]">
-                            <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center border border-white/5 shadow-inner">
-                                <span class="text-white font-black">#${p.numero}</span>
+            return `
+                <article class="rounded-[24px] border border-white/10 bg-[#121212] p-5">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div class="space-y-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <span class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm font-semibold text-white">Parcela ${parcela.numero}</span>
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${parcela.status_badge_class}">
+                                    ${parcela.status_label}
+                                </span>
                             </div>
-                            <div>
-                                <div class="text-white font-black text-lg">R$ ${parseFloat(p.valor).toFixed(2)}</div>
-                                <div class="text-xs ${statusColor} font-bold uppercase tracking-wider flex items-center gap-1">
-                                    <i class="${icon}"></i> ${p.status}
+                            <div class="grid gap-3 text-sm text-zinc-400 sm:grid-cols-2 xl:grid-cols-4">
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-[0.18em] text-zinc-600">Valor</p>
+                                    <p class="mt-1 font-semibold text-white">R$ ${escapeHtml(parcela.valor_formatado)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-[0.18em] text-zinc-600">Vencimento</p>
+                                    <p class="mt-1 font-semibold text-white">${escapeHtml(parcela.data_vencimento_br)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-[0.18em] text-zinc-600">Pagamento</p>
+                                    <p class="mt-1 font-semibold text-white">${escapeHtml(parcela.data_pagamento_br || 'Em aberto')}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] uppercase tracking-[0.18em] text-zinc-600">Atraso</p>
+                                    <p class="mt-1 font-semibold text-white">${parcela.dias_atraso ? `${parcela.dias_atraso} dia(s)` : 'Sem atraso'}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Datas e Link Display -->
-                        <div class="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-400">
-                            <div>
-                                <span class="block text-[10px] uppercase text-gray-600 font-bold">Vencimento</span>
-                                <span class="text-white">${v_dateBR}</span>
+                        <div class="space-y-3 xl:w-[320px]">
+                            <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-400">
+                                <p class="text-[11px] uppercase tracking-[0.18em] text-zinc-600">Link / PIX</p>
+                                <p class="mt-2 break-all text-zinc-300">${escapeHtml(parcela.link_pagamento_ou_pix || 'Nao informado')}</p>
+                                <div class="mt-3">${comprovanteLink}</div>
                             </div>
-                            <div>
-                                <span class="block text-[10px] uppercase text-gray-600 font-bold">Pagamento (Baixa)</span>
-                                ${p.data_pagamento ? `<span class="text-green-400 font-medium">${p.data_pagamento.split('-').reverse().join('/')}</span>` : `<span class="text-gray-500 italic">Pendente</span>`}
-                            </div>
-                            <div class="col-span-2 lg:col-span-1">
-                                <span class="block text-[10px] uppercase text-gray-600 font-bold">Anexos / Link</span>
-                                <div class="flex gap-2 mt-1">
-                                    ${p.link ? `<a href="${p.link}" target="_blank" class="text-blue-400 hover:text-blue-300 text-xs truncate max-w-[100px] inline-block" title="${p.link}"><i class="fas fa-link"></i> Abrir Link</a>` : `<span class="text-gray-600 text-xs italic">Sem link</span>`}
-                                    ${p.comprovante_url ? `| <a href="${p.comprovante_url}" target="_blank" class="text-green-400 hover:text-green-300 text-xs"><i class="fas fa-file-invoice-dollar"></i> Recibo</a>` : ``}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Ações Dinâmicas -->
-                        <div class="flex items-center gap-2 justify-end">
-                            ${buttonsHtml}
-                            <button onclick="toggleFormBaixa(${p.id})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors" title="Editar (Dar Baixa / Link)">
-                                <i class="fas fa-pencil-alt text-xs"></i>
+                            ${whatsappButtons}
+                            <button type="button" onclick="toggleEdicaoParcela(${parcela.id})"
+                                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                                Editar parcela
                             </button>
                         </div>
-                        
                     </div>
 
-                    <!-- Formulário Oculto de Quick Edit -->
-                    <div id="form-baixa-${p.id}" class="hidden mt-4 pt-4 border-t border-white/5">
-                        <form onsubmit="salvarParcela(event, ${p.id})" class="flex flex-col md:flex-row items-end gap-3">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="${token}">
-                            
-                            <div class="w-full md:w-auto flex-1">
-                                <label class="text-[10px] uppercase text-gray-500 font-bold block mb-1">Data Pagamento (Baixa)</label>
-                                <input type="date" name="data_pagamento" class="w-full bg-black border border-white/20 text-white text-sm rounded px-3 py-1.5 focus:border-mindhub-red outline-none" value="${p.data_pagamento || ''}">
-                            </div>
-                            
-                            <div class="w-full md:w-auto flex-[2]">
-                                <label class="text-[10px] uppercase text-gray-500 font-bold block mb-1">Link de Pagamento Seguro</label>
-                                <input type="url" name="link_pagamento_ou_pix" placeholder="https://..." class="w-full bg-black border border-white/20 text-white text-sm rounded px-3 py-1.5 focus:border-mindhub-red outline-none" value="${p.link || ''}">
-                            </div>
-                            
-                            <div class="w-full md:w-auto">
-                                <button type="submit" class="w-full md:w-auto bg-white/10 hover:bg-white text-gray-300 hover:text-black font-bold py-1.5 px-4 rounded transition-colors text-sm border border-white/20">
-                                    Salvar Alterações
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                    <form id="edicao-parcela-${parcela.id}" class="mt-4 hidden border-t border-white/10 pt-4" onsubmit="salvarParcela(event, ${parcela.id})">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                            <label class="block">
+                                <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Data de pagamento</span>
+                                <input type="date" name="data_pagamento" value="${escapeHtml(parcela.data_pagamento)}"
+                                    class="w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white focus:border-[#e30613] focus:outline-none">
+                            </label>
+                            <label class="block">
+                                <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Link / PIX</span>
+                                <input type="text" name="link_pagamento_ou_pix" value="${escapeHtml(parcela.link_pagamento_ou_pix)}"
+                                    class="w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white focus:border-[#e30613] focus:outline-none">
+                            </label>
+                            <label class="block">
+                                <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Comprovante</span>
+                                <input type="file" name="comprovante"
+                                    class="w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-zinc-300 file:mr-3 file:rounded-full file:border-0 file:bg-[#e30613] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white">
+                            </label>
+                            <label class="block md:col-span-2 xl:col-span-1">
+                                <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Observacoes</span>
+                                <textarea name="observacoes" rows="2"
+                                    class="w-full rounded-2xl border border-white/10 bg-[#0d0d0d] px-3 py-2 text-sm text-white focus:border-[#e30613] focus:outline-none">${escapeHtml(parcela.observacoes)}</textarea>
+                            </label>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button type="submit"
+                                class="rounded-2xl border border-[#e30613]/40 bg-[#e30613] px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">
+                                Salvar atualizacao
+                            </button>
+                        </div>
+                    </form>
+                </article>
             `;
-        });
-
-        listContainer.innerHTML = html;
+        }).join('');
     }
 
-    function toggleFormBaixa(id) {
-        const form = document.getElementById(`form-baixa-${id}`);
-        if (form.classList.contains('hidden')) {
-            form.classList.remove('hidden');
+    function toggleEdicaoParcela(parcelaId) {
+        const form = document.getElementById(`edicao-parcela-${parcelaId}`);
+        form.classList.toggle('hidden');
+    }
+
+    function atualizarLinhaResumo(resumo) {
+        if (!resumo || !resumo.id) {
+            return;
+        }
+
+        const row = document.getElementById(`aluno-row-${resumo.id}`);
+        if (!row) {
+            return;
+        }
+
+        row.dataset.status = resumo.status_codigo;
+
+        const statusEl = document.getElementById(`row-status-${resumo.id}`);
+        statusEl.className = `inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${resumo.status_badge_class}`;
+        statusEl.innerHTML = `<span class="h-2 w-2 rounded-full ${resumo.status_dot_class}"></span><span>${escapeHtml(resumo.status_label)}</span>`;
+
+        const parcelaEl = document.getElementById(`row-parcela-${resumo.id}`);
+        if (resumo.parcela_atual) {
+            parcelaEl.innerHTML = `
+                <p class="font-semibold text-white">R$ ${Number(resumo.parcela_atual.valor).toFixed(2)}</p>
+                <p class="mt-1 text-sm text-zinc-500">Parcela ${resumo.parcela_atual.numero} · ${escapeHtml(resumo.parcela_atual.data_vencimento_br)}</p>
+            `;
         } else {
-            form.classList.add('hidden');
+            parcelaEl.innerHTML = `
+                <p class="font-semibold text-zinc-400">Sem parcela em aberto</p>
+                <p class="mt-1 text-sm text-zinc-600">Contrato quitado, cancelado ou inexistente.</p>
+            `;
         }
     }
 
-    function salvarParcela(e, id) {
-        e.preventDefault();
-        const form = e.target;
+    function salvarParcela(event, parcelaId) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const submit = form.querySelector('button[type="submit"]');
         const formData = new FormData(form);
-        const btn = form.querySelector('button[type="submit"]');
-        const originalText = btn.innerHTML;
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+        submit.disabled = true;
+        submit.textContent = 'Salvando...';
 
-        fetch(`/financeiro/api/parcela/${id}/atualizar/`, {
+        fetch(`/financeiro/api/parcela/${parcelaId}/atualizar/`, {
             method: 'POST',
             body: formData,
             headers: {
-                // Fetch já gerencia o Multipart Form Data qndo passamos FormData e NÂO setamos ContentType
+                'X-CSRFToken': csrfToken,
             }
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    // Idealmente recarregamos a ficha atual
-                    abrirFichaAluno(document.getElementById('modalAlunoNome').getAttribute('data-id-cache') || document.querySelector('.aluno-fin-row').getAttribute('onclick').match(/\d+/)[0]);
-                    // Hack fallback: recarregar a pagina global
-                    window.location.reload();
-                } else {
-                    alert("Erro ao salvar: " + (data.error || "Desconhecido"));
+            .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    throw new Error(data.error || 'Nao foi possivel salvar a parcela.');
+                }
+
+                showToast('Parcela atualizada com sucesso.', 'success');
+                atualizarLinhaResumo(data.resumo_aluno);
+                if (currentAlunoId) {
+                    abrirFichaAluno(currentAlunoId);
                 }
             })
-            .catch(err => {
-                alert("Erro de conexão.");
-                console.error(err);
+            .catch((error) => {
+                showToast(error.message, 'error');
             })
             .finally(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                submit.disabled = false;
+                submit.textContent = 'Salvar atualizacao';
             });
     }
 
-    // PDF Generator
     function baixarRelatorioPDF() {
-        const element = document.getElementById('relatorio-financeiro-container');
-
-        // Esconder coisas interativas do PDF (pesquisas, selects)
-        const botoesAcao = element.querySelectorAll('button');
-        const selects = element.querySelectorAll('select');
-        const inputs = element.querySelectorAll('input');
-
-        // CSS tweaks temporarios pro print ficar bom
-        element.style.background = '#121212';
-        element.style.padding = '20px';
-
-        const opt = {
+        switchTab('farol');
+        const element = document.getElementById('relatorio-financeiro');
+        const options = {
             margin: 10,
-            filename: `relatorio_financeiro_${new Date().toISOString().slice(0, 10)}.pdf`,
+            filename: `central_financeira_${new Date().toISOString().slice(0, 10)}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#121212' },
+            html2canvas: { scale: 2, backgroundColor: '#121212' },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
 
-        // Notify
-        const btnExport = document.querySelector('button[onclick="baixarRelatorioPDF()"]');
-        const oldContent = btnExport.innerHTML;
-        btnExport.innerHTML = '<i class="fas fa-spinner fa-spin text-red-400"></i> Gerando PDF...';
-        btnExport.classList.add('opacity-50', 'pointer-events-none');
-
-        // Promise to revert changes
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.style.background = '';
-            element.style.padding = '';
-            btnExport.innerHTML = oldContent;
-            btnExport.classList.remove('opacity-50', 'pointer-events-none');
-        });
+        html2pdf().set(options).from(element).save();
     }
+
+    function refreshData() {
+        window.location.reload();
+    }
+
+    modalFicha.addEventListener('click', (event) => {
+        if (event.target === modalFicha) {
+            fecharFichaAluno();
+        }
+    });
 </script>
 {% endblock %}

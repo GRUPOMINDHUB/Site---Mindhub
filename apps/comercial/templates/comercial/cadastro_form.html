@@ -1,0 +1,277 @@
+{% extends 'trilha/base_monitor.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(227,6,19,0.14),_transparent_35%),linear-gradient(135deg,_rgba(18,18,18,1),_rgba(8,8,8,1))] p-6 shadow-2xl">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-red-200/70">
+                    {% if aluno %}Ficha Completa{% else %}Novo Onboarding{% endif %}
+                </p>
+                <h1 class="mt-3 text-3xl font-black text-white">{{ page_title }}</h1>
+                <p class="mt-3 max-w-3xl text-sm leading-6 text-zinc-300">
+                    {% if readonly %}
+                    Visualizacao liberada para monitor. Dados cadastrais e financeiros ficam travados; renegociacoes seguem por proposta.
+                    {% else %}
+                    Cadastre o mentorado com dados empresariais, diagnostico e contrato inicial em uma unica ficha.
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'comercial:cadastros' %}"
+                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
+                Voltar
+            </a>
+        </div>
+    </section>
+
+    {% if messages %}
+    <section class="space-y-3">
+        {% for message in messages %}
+        <div class="rounded-2xl border px-4 py-3 text-sm {% if message.tags == 'error' %}border-red-500/30 bg-red-500/15 text-red-100{% elif message.tags == 'success' %}border-emerald-500/30 bg-emerald-500/15 text-emerald-100{% else %}border-white/10 bg-white/5 text-zinc-100{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <section class="rounded-2xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-100">
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </section>
+            {% endif %}
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Dados do aluno</h2>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    {% for field in form %}
+                        {% if field.name == 'nome' or field.name == 'email' or field.name == 'telefone' or field.name == 'senha' or field.name == 'monitor_responsavel' %}
+                        <div class="{% if field.name == 'monitor_responsavel' %}md:col-span-2{% endif %}">
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ field.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Perfil empresarial</h2>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    {% for field in form %}
+                        {% if field.name == 'nome_empresa' or field.name == 'telefone_empresa' or field.name == 'cnpj' or field.name == 'endereco' or field.name == 'nicho' or field.name == 'nome_representante' or field.name == 'cpf_representante' %}
+                        <div class="{% if field.name == 'endereco' %}md:col-span-2{% endif %}">
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ field.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Diagnostico inicial</h2>
+                </div>
+                <div class="space-y-5">
+                    <div>
+                        <label class="mb-3 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.dificuldades.label }}</label>
+                        <div class="grid gap-3 md:grid-cols-2">
+                            {{ form.dificuldades }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.observacoes.label }}</label>
+                        {{ form.observacoes }}
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Financeiro de entrada</h2>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    {% for field in form %}
+                        {% if field.name == 'valor_total_negociado' or field.name == 'data_assinatura' or field.name == 'quantidade_entrada' or field.name == 'valor_entrada' or field.name == 'quantidade_recorrente' or field.name == 'valor_recorrente' or field.name == 'primeiro_vencimento' or field.name == 'contrato_assinado' or field.name == 'comprovante_entrada' %}
+                        <div class="{% if field.name == 'contrato_assinado' or field.name == 'comprovante_entrada' %}md:col-span-2{% endif %}">
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ field.errors|striptags }}</p>
+                            {% endif %}
+                            {% if contrato and field.name == 'contrato_assinado' and contrato.contrato_assinado %}
+                            <a href="{{ contrato.contrato_assinado.url }}" target="_blank" class="mt-2 inline-block text-sm text-red-200 underline underline-offset-4">
+                                Abrir contrato atual
+                            </a>
+                            {% endif %}
+                            {% if contrato and field.name == 'comprovante_entrada' and contrato.comprovante_entrada %}
+                            <a href="{{ contrato.comprovante_entrada.url }}" target="_blank" class="mt-2 inline-block text-sm text-red-200 underline underline-offset-4">
+                                Abrir comprovante atual
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if not readonly %}
+            <div class="flex justify-end">
+                <button type="submit"
+                    class="rounded-2xl border border-mindhub-red/40 bg-mindhub-red px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+                    {% if aluno %}Salvar ficha{% else %}Concluir cadastro{% endif %}
+                </button>
+            </div>
+            {% endif %}
+        </form>
+
+        <div class="space-y-6">
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Parcelas cadastradas</h2>
+                </div>
+                <div class="space-y-3">
+                    {% for parcela in parcelas %}
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-white">Parcela {{ parcela.numero }}</p>
+                                <p class="mt-1 text-sm text-zinc-500">{{ parcela.tipo_parcela }} · {{ parcela.data_vencimento|date:"d/m/Y" }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-white">R$ {{ parcela.valor|floatformat:2 }}</p>
+                                <p class="mt-1 text-xs text-zinc-500">{{ parcela.get_status }}</p>
+                            </div>
+                        </div>
+                        {% if parcela.asaas_invoice_url %}
+                        <a href="{{ parcela.asaas_invoice_url }}" target="_blank" class="mt-3 inline-block text-sm text-red-200 underline underline-offset-4">
+                            Abrir cobranca Asaas
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-zinc-500">Nenhuma parcela registrada.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if readonly and proposal_form %}
+            <section class="rounded-[28px] border border-red-500/20 bg-red-500/10 p-6">
+                <div class="mb-5 border-b border-red-500/20 pb-4">
+                    <h2 class="text-lg font-bold text-white">Propor renegociacao</h2>
+                    <p class="mt-2 text-sm text-red-100/80">O monitor nao altera o contrato direto. A proposta segue para aprovacao do ADM Master.</p>
+                </div>
+                <form method="post" action="{% url 'comercial:criar_proposta' aluno.id %}" class="space-y-4">
+                    {% csrf_token %}
+                    {% for field in proposal_form %}
+                    <div>
+                        <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-red-100/70">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <p class="mt-2 text-sm text-red-200">{{ field.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="w-full rounded-2xl border border-red-400/30 bg-black/20 px-4 py-3 text-sm font-semibold text-white transition hover:bg-black/30">
+                        Enviar proposta
+                    </button>
+                </form>
+            </section>
+            {% endif %}
+
+            <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
+                <div class="mb-5 border-b border-white/10 pb-4">
+                    <h2 class="text-lg font-bold text-white">Historico de propostas</h2>
+                </div>
+                <div class="space-y-4">
+                    {% for proposta in propostas %}
+                    <article class="rounded-2xl border border-white/10 bg-[#121212] p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-white">{{ proposta.status }}</p>
+                                <p class="mt-1 text-sm text-zinc-500">Criada por {{ proposta.criada_por.nome|default:proposta.criada_por.email }} em {{ proposta.criada_em|date:"d/m/Y H:i" }}</p>
+                            </div>
+                            {% if proposta.aprovada_por %}
+                            <p class="text-sm text-zinc-500">Parecer: {{ proposta.aprovada_por.nome|default:proposta.aprovada_por.email }}</p>
+                            {% endif %}
+                        </div>
+                        <p class="mt-3 text-sm text-zinc-300">{{ proposta.motivo }}</p>
+                        <div class="mt-3 space-y-2">
+                            {% for parcela in proposta.parcelas_propostas.all %}
+                            <div class="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2 text-sm text-zinc-300">
+                                <span>Parcela {{ parcela.numero }}</span>
+                                <span>R$ {{ parcela.valor|floatformat:2 }} · {{ parcela.data_vencimento|date:"d/m/Y" }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </article>
+                    {% empty %}
+                    <p class="text-sm text-zinc-500">Nenhuma proposta registrada ate o momento.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    input, select, textarea {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: #121212;
+        color: #fff;
+        padding: 0.75rem 0.9rem;
+        outline: none;
+    }
+
+    textarea {
+        min-height: 110px;
+    }
+
+    input[type="file"] {
+        padding: 0.6rem 0.75rem;
+    }
+
+    input[type="checkbox"] {
+        width: auto;
+        margin-right: 0.65rem;
+    }
+
+    input[disabled], select[disabled], textarea[disabled] {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    #id_dificuldades {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    #id_dificuldades label {
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 1rem;
+        background: #121212;
+        padding: 0.85rem 1rem;
+        color: #d4d4d8;
+    }
+</style>
+{% endblock %}

@@ -113,7 +113,7 @@ def gerenciar_acessos(request):
     
     # COMERCIAL vai direto para cadastro
     if usuario.is_comercial:
-        return redirect('usuarios:cadastrar_usuario')
+        return redirect('comercial:cadastros')
     
     # ADMIN vê todos
     if usuario.is_admin:

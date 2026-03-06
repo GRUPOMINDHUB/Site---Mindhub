@@ -44,6 +44,7 @@ class Usuario(models.Model):
     )
     data_cadastro = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
+    pode_aprovar_financeiro = models.BooleanField(default=False)
     
     class Meta:
         verbose_name = 'Usuário'
@@ -91,6 +92,10 @@ class Usuario(models.Model):
     @property
     def is_comercial(self):
         return self.role == RoleChoices.COMERCIAL
+
+    @property
+    def is_admin_master(self):
+        return self.is_admin and self.pode_aprovar_financeiro
     
     @property
     def pode_validar(self):
