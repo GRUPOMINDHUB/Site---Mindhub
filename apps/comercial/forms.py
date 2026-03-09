@@ -1,12 +1,20 @@
+from decimal import Decimal
+
 from django import forms
 from django.utils import timezone
 
+from apps.financeiro.models import MetodoPagamentoContrato
 from apps.usuarios.models import Usuario
 
 from .services import escolhas_dificuldades, escolhas_nichos, monitores_ativos
 
 
 class CadastroAlunoOnboardingForm(forms.Form):
+    MODALIDADE_CHOICES = (
+        ("AVISTA", "A vista"),
+        ("PARCELADO", "Parcelado"),
+    )
+
     nome = forms.CharField(max_length=200)
     email = forms.EmailField()
     telefone = forms.CharField(max_length=20, required=False)
@@ -27,15 +35,39 @@ class CadastroAlunoOnboardingForm(forms.Form):
     )
     observacoes = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 4}))
 
-    valor_total_negociado = forms.DecimalField(max_digits=10, decimal_places=2)
-    data_assinatura = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={"type": "date"}))
-    quantidade_entrada = forms.IntegerField(min_value=0, initial=1)
-    valor_entrada = forms.DecimalField(max_digits=10, decimal_places=2, initial=0)
-    quantidade_recorrente = forms.IntegerField(min_value=0, initial=6)
-    valor_recorrente = forms.DecimalField(max_digits=10, decimal_places=2, initial=0)
-    primeiro_vencimento = forms.DateField(initial=timezone.localdate, widget=forms.DateInput(attrs={"type": "date"}))
-    contrato_assinado = forms.FileField(required=False)
-    comprovante_entrada = forms.FileField(required=False)
+    valor_entrada = forms.DecimalField(
+        label="Valor da Entrada (R$)",
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        required=False,
+        initial=0,
+        widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "0.00"}),
+    )
+    data_contrato = forms.DateField(
+        label="Data do Contrato",
+        initial=timezone.localdate,
+        widget=forms.DateInput(attrs={"type": "date"}),
+    )
+    modalidade_pagamento = forms.ChoiceField(choices=MODALIDADE_CHOICES, initial="PARCELADO")
+    valor_total_avista = forms.DecimalField(
+        label="Valor Total (R$)",
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        required=False,
+        widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "0.00"}),
+    )
+    quantidade_parcelas = forms.IntegerField(label="Quantidade de Parcelas", min_value=1, required=False, initial=3)
+    metodo_pagamento = forms.ChoiceField(label="Metodo de Pagamento", choices=MetodoPagamentoContrato.choices, initial=MetodoPagamentoContrato.PIX)
+    link_pagamento_ou_pix = forms.CharField(
+        label="Link de Pagamento ou Chave Pix",
+        max_length=500,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "https://... ou chave pix"}),
+    )
+    contrato_assinado = forms.FileField(label="Contrato Assinado", required=False)
+    comprovante_entrada = forms.FileField(label="Comprovante da Entrada", required=False)
 
     def __init__(self, *args, allow_password_optional=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,9 +76,20 @@ class CadastroAlunoOnboardingForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        quantidade_total = (cleaned_data.get("quantidade_entrada") or 0) + (cleaned_data.get("quantidade_recorrente") or 0)
-        if quantidade_total <= 0:
-            raise forms.ValidationError("Defina ao menos uma parcela de entrada ou recorrente.")
+        modalidade = cleaned_data.get("modalidade_pagamento")
+        valor_entrada = cleaned_data.get("valor_entrada") or Decimal("0.00")
+
+        if valor_entrada < 0:
+            self.add_error("valor_entrada", "Informe um valor de entrada valido.")
+
+        if modalidade == "AVISTA":
+            valor_total_avista = cleaned_data.get("valor_total_avista")
+            if not valor_total_avista or valor_total_avista <= 0:
+                self.add_error("valor_total_avista", "Informe o valor total para pagamento a vista.")
+        elif modalidade == "PARCELADO":
+            quantidade_parcelas = cleaned_data.get("quantidade_parcelas")
+            if not quantidade_parcelas or quantidade_parcelas <= 0:
+                self.add_error("quantidade_parcelas", "Informe a quantidade de parcelas.")
 
         return cleaned_data
 

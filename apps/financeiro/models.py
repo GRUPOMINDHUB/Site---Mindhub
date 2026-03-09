@@ -10,6 +10,14 @@ class ContratoStatus(models.TextChoices):
     CANCELADO = "CANCELADO", "Cancelado"
 
 
+class MetodoPagamentoContrato(models.TextChoices):
+    PIX = "PIX", "Pix"
+    BOLETO = "BOLETO", "Boleto"
+    CARTAO = "CARTAO", "Cartao"
+    TRANSFERENCIA = "TRANSFERENCIA", "Transferencia"
+    DINHEIRO = "DINHEIRO", "Dinheiro"
+
+
 class TipoParcela(models.TextChoices):
     ENTRADA = "ENTRADA", "Entrada"
     RECORRENTE = "RECORRENTE", "Recorrente"
@@ -20,11 +28,17 @@ class OrigemParcela(models.TextChoices):
     RENEGOCIACAO = "RENEGOCIACAO", "Renegociacao"
 
 
+class TipoRenegociacao(models.TextChoices):
+    ADIAR = "ADIAR", "Adiar"
+    QUEBRAR = "QUEBRAR", "Quebrar"
+
+
 class ParcelaStatus(models.TextChoices):
     PAGO = "PAGO", "Pago"
     PENDENTE = "PENDENTE", "Pendente"
     ATRASADO = "ATRASADO", "Atrasado"
     INADIMPLENTE = "INADIMPLENTE", "Inadimplente"
+    CANCELADA_RENEGOCIACAO = "CANCELADA_RENEGOCIACAO", "Cancelada (renegociacao)"
     CANCELADO = "CANCELADO", "Cancelado"
 
 
@@ -43,6 +57,11 @@ class Contrato(models.Model):
     )
     data_assinatura = models.DateField(default=timezone.now)
     observacoes_gerais = models.TextField(blank=True)
+    metodo_pagamento = models.CharField(
+        max_length=20,
+        choices=MetodoPagamentoContrato.choices,
+        default=MetodoPagamentoContrato.PIX,
+    )
     status = models.CharField(
         max_length=20,
         choices=ContratoStatus.choices,
@@ -135,6 +154,14 @@ class Parcela(models.Model):
     asaas_invoice_url = models.URLField(blank=True)
     sincronizada_asaas_em = models.DateTimeField(null=True, blank=True)
     ativa = models.BooleanField(default=True)
+    parcela_origem = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="parcelas_derivadas",
+    )
+    ja_renegociada = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["data_vencimento", "numero"]
@@ -148,7 +175,11 @@ class Parcela(models.Model):
     def get_status(self, referencia=None) -> str:
         referencia = referencia or timezone.localdate()
 
-        if not self.ativa or self.contrato.status == ContratoStatus.CANCELADO:
+        if self.contrato.status == ContratoStatus.CANCELADO:
+            return ParcelaStatus.CANCELADO
+        if not self.ativa:
+            if self.ja_renegociada:
+                return ParcelaStatus.CANCELADA_RENEGOCIACAO
             return ParcelaStatus.CANCELADO
         if self.data_pagamento:
             return ParcelaStatus.PAGO
@@ -170,3 +201,39 @@ class Parcela(models.Model):
     @property
     def status_dinamico(self) -> str:
         return self.get_status()
+
+
+class PropostaRenegociacao(models.Model):
+    contrato = models.ForeignKey(
+        Contrato,
+        on_delete=models.CASCADE,
+        related_name="propostas_renegociacao",
+    )
+    parcela_alvo = models.ForeignKey(
+        Parcela,
+        on_delete=models.CASCADE,
+        related_name="propostas_renegociacao",
+    )
+    tipo_renegociacao = models.CharField(max_length=20, choices=TipoRenegociacao.choices)
+    dados_fatiamento = models.JSONField(null=True, blank=True)
+    criada_por = models.ForeignKey(
+        "usuarios.Usuario",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="propostas_renegociacao_criadas",
+    )
+    observacoes = models.TextField(blank=True)
+    criada_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criada_em"]
+        verbose_name = "Proposta de renegociacao"
+        verbose_name_plural = "Propostas de renegociacao"
+
+    def __str__(self):
+        return f"Renegociacao {self.get_tipo_renegociacao_display()} - Parcela {self.parcela_alvo_id}"
+
+    def clean(self):
+        if self.tipo_renegociacao == TipoRenegociacao.QUEBRAR and not self.dados_fatiamento:
+            raise ValidationError({"dados_fatiamento": "Fatiamento obrigatorio para renegociacao do tipo QUEBRAR."})

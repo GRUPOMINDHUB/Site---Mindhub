@@ -39,6 +39,9 @@ class CadastroResultado:
     criado: bool
 
 
+ZERO = Decimal("0.00")
+
+
 def monitores_ativos():
     return Usuario.objects.filter(role=RoleChoices.MONITOR, ativo=True).order_by("nome", "email")
 
@@ -80,14 +83,24 @@ def gerar_senha_temporaria() -> str:
     return "".join(secrets.choice(caracteres) for _ in range(10))
 
 
-def construir_mensagem_boas_vindas(aluno: Usuario, senha_plana: str, landing_url: str) -> dict[str, str]:
+def construir_mensagem_boas_vindas(
+    aluno: Usuario,
+    senha_plana: str,
+    landing_url: str,
+    link_pagamento_ou_pix: str = "",
+) -> dict[str, str]:
     nome = aluno.nome or aluno.email.split("@")[0]
+    link_pagamento_ou_pix = (link_pagamento_ou_pix or "").strip()
+    bloco_pagamento = ""
+    if link_pagamento_ou_pix:
+        bloco_pagamento = f"\n\nPagamento (Pix/Link): {link_pagamento_ou_pix}"
     mensagem_base = (
         f"Ola, {nome}! Seu acesso ao Mindhub OS foi criado com sucesso.\n\n"
         f"Login: {aluno.email}\n"
         f"Senha: {senha_plana}\n"
         f"Acesso: {landing_url}\n\n"
         "Assim que entrar, fale com seu monitor para iniciar a configuracao da trilha."
+        f"{bloco_pagamento}"
     )
     return {
         "email": (
@@ -96,14 +109,14 @@ def construir_mensagem_boas_vindas(aluno: Usuario, senha_plana: str, landing_url
             f"Login: {aluno.email}\n"
             f"Senha temporaria: {senha_plana}\n"
             f"Landing page: {landing_url}\n\n"
-            "Qualquer duvida, responda esta mensagem ou fale com seu monitor."
+            f"Qualquer duvida, responda esta mensagem ou fale com seu monitor.{bloco_pagamento}"
         ),
         "whatsapp": mensagem_base,
     }
 
 
-def registrar_envios_onboarding(aluno: Usuario, senha_plana: str, landing_url: str):
-    mensagens = construir_mensagem_boas_vindas(aluno, senha_plana, landing_url)
+def registrar_envios_onboarding(aluno: Usuario, senha_plana: str, landing_url: str, link_pagamento_ou_pix: str = ""):
+    mensagens = construir_mensagem_boas_vindas(aluno, senha_plana, landing_url, link_pagamento_ou_pix=link_pagamento_ou_pix)
     envios = []
 
     envio_email = EnvioOnboarding.objects.create(
@@ -168,94 +181,115 @@ def sincronizar_contrato_asaas(contrato: Contrato):
 
 def _construir_parcelas(
     contrato: Contrato,
-    quantidade_entrada: int,
     valor_entrada: Decimal,
-    quantidade_recorrente: int,
-    valor_recorrente: Decimal,
-    primeiro_vencimento,
+    parcelas_planejadas: list[dict],
+    data_contrato,
     origem: str,
+    entrada_quitada: bool,
 ):
-    data_cursor = primeiro_vencimento
-    numero = 1
     parcelas = []
 
-    for _ in range(quantidade_entrada):
+    if valor_entrada and valor_entrada > ZERO:
         parcelas.append(
             Parcela.objects.create(
                 contrato=contrato,
-                numero=numero,
+                numero=0,
                 valor=valor_entrada,
-                data_vencimento=data_cursor,
+                data_vencimento=data_contrato,
+                data_pagamento=data_contrato if entrada_quitada else None,
+                observacoes="Entrada do contrato.",
                 tipo_parcela=TipoParcela.ENTRADA,
                 origem=origem,
             )
         )
-        numero += 1
-        data_cursor = data_cursor + relativedelta(months=1)
 
-    for _ in range(quantidade_recorrente):
+    for numero, parcela_planejada in enumerate(parcelas_planejadas, start=1):
         parcelas.append(
             Parcela.objects.create(
                 contrato=contrato,
                 numero=numero,
-                valor=valor_recorrente,
-                data_vencimento=data_cursor,
+                valor=parcela_planejada["valor"],
+                data_vencimento=parcela_planejada["data_vencimento"],
+                observacoes=parcela_planejada.get("observacoes", ""),
+                link_pagamento_ou_pix=parcela_planejada.get("link_pagamento_ou_pix", ""),
                 tipo_parcela=TipoParcela.RECORRENTE,
                 origem=origem,
             )
         )
-        numero += 1
-        data_cursor = data_cursor + relativedelta(months=1)
 
     return parcelas
+
+
+def _valor_total_planejado(valor_entrada: Decimal, parcelas_planejadas: list[dict]) -> Decimal:
+    return valor_entrada + sum((parcela["valor"] for parcela in parcelas_planejadas), ZERO)
 
 
 def _resumo_parcelamento(parcelas):
     if not parcelas:
         return None
 
-    entrada = [parcela for parcela in parcelas if parcela.tipo_parcela == TipoParcela.ENTRADA]
-    recorrentes = [parcela for parcela in parcelas if parcela.tipo_parcela == TipoParcela.RECORRENTE]
+    entrada = sum((parcela.valor for parcela in parcelas if parcela.tipo_parcela == TipoParcela.ENTRADA), ZERO)
+    recorrentes = [
+        {
+            "valor": parcela.valor,
+            "data_vencimento": parcela.data_vencimento,
+        }
+        for parcela in parcelas
+        if parcela.tipo_parcela == TipoParcela.RECORRENTE
+    ]
 
     return {
-        "quantidade_entrada": len(entrada),
-        "valor_entrada": entrada[0].valor if entrada else Decimal("0.00"),
-        "quantidade_recorrente": len(recorrentes),
-        "valor_recorrente": recorrentes[0].valor if recorrentes else Decimal("0.00"),
-        "primeiro_vencimento": parcelas[0].data_vencimento,
+        "valor_entrada": entrada,
+        "parcelas": recorrentes,
     }
 
 
-def _parcelamento_corresponde(parcelas, dados: dict) -> bool:
+def _parcelamento_corresponde(parcelas, valor_entrada: Decimal, parcelas_planejadas: list[dict]) -> bool:
     resumo = _resumo_parcelamento(parcelas)
     if not resumo:
         return False
 
-    return (
-        resumo["quantidade_entrada"] == dados["quantidade_entrada"]
-        and resumo["valor_entrada"] == dados["valor_entrada"]
-        and resumo["quantidade_recorrente"] == dados["quantidade_recorrente"]
-        and resumo["valor_recorrente"] == dados["valor_recorrente"]
-        and resumo["primeiro_vencimento"] == dados["primeiro_vencimento"]
-    )
+    if resumo["valor_entrada"] != valor_entrada:
+        return False
+
+    if len(resumo["parcelas"]) != len(parcelas_planejadas):
+        return False
+
+    for atual, planejada in zip(resumo["parcelas"], parcelas_planejadas):
+        if atual["valor"] != planejada["valor"] or atual["data_vencimento"] != planejada["data_vencimento"]:
+            return False
+
+    return True
 
 
-def _sincronizar_parcelamento_contrato(contrato: Contrato, dados: dict):
+def _sincronizar_parcelamento_contrato(
+    contrato: Contrato,
+    valor_entrada: Decimal,
+    parcelas_planejadas: list[dict],
+    data_contrato,
+    entrada_quitada: bool,
+):
     parcelas_ativas = list(contrato.parcelas.filter(ativa=True).order_by("numero"))
     if not parcelas_ativas:
         _construir_parcelas(
             contrato=contrato,
-            quantidade_entrada=dados["quantidade_entrada"],
-            valor_entrada=dados["valor_entrada"],
-            quantidade_recorrente=dados["quantidade_recorrente"],
-            valor_recorrente=dados["valor_recorrente"],
-            primeiro_vencimento=dados["primeiro_vencimento"],
+            valor_entrada=valor_entrada,
+            parcelas_planejadas=parcelas_planejadas,
+            data_contrato=data_contrato,
             origem=OrigemParcela.CADASTRO,
+            entrada_quitada=entrada_quitada,
         )
         sincronizar_contrato_asaas(contrato)
         return
 
-    if _parcelamento_corresponde(parcelas_ativas, dados):
+    if _parcelamento_corresponde(parcelas_ativas, valor_entrada, parcelas_planejadas):
+        parcela_entrada = contrato.parcelas.filter(ativa=True, tipo_parcela=TipoParcela.ENTRADA).first()
+        if parcela_entrada and entrada_quitada and not parcela_entrada.data_pagamento:
+            parcela_entrada.data_pagamento = data_contrato
+            parcela_entrada.save(update_fields=["data_pagamento"])
+        link_pagamento = (parcelas_planejadas[0].get("link_pagamento_ou_pix") or "").strip() if parcelas_planejadas else ""
+        if link_pagamento:
+            contrato.parcelas.filter(ativa=True, link_pagamento_ou_pix="").update(link_pagamento_ou_pix=link_pagamento)
         sincronizar_contrato_asaas(contrato)
         return
 
@@ -271,12 +305,11 @@ def _sincronizar_parcelamento_contrato(contrato: Contrato, dados: dict):
     )
     _construir_parcelas(
         contrato=contrato,
-        quantidade_entrada=dados["quantidade_entrada"],
-        valor_entrada=dados["valor_entrada"],
-        quantidade_recorrente=dados["quantidade_recorrente"],
-        valor_recorrente=dados["valor_recorrente"],
-        primeiro_vencimento=dados["primeiro_vencimento"],
+        valor_entrada=valor_entrada,
+        parcelas_planejadas=parcelas_planejadas,
+        data_contrato=data_contrato,
         origem=OrigemParcela.CADASTRO,
+        entrada_quitada=entrada_quitada,
     )
     sincronizar_contrato_asaas(contrato)
 
@@ -316,11 +349,19 @@ def criar_notificacao_proposta(proposta: PropostaFinanceira):
 
 
 @transaction.atomic
-def salvar_onboarding_aluno(form, usuario_logado: Usuario, landing_url: str, aluno: Usuario | None = None) -> CadastroResultado:
+def salvar_onboarding_aluno(
+    form,
+    usuario_logado: Usuario,
+    landing_url: str,
+    parcelas_planejadas: list[dict],
+    aluno: Usuario | None = None,
+) -> CadastroResultado:
     dados = form.cleaned_data
     criando = aluno is None
     senha_informada = dados.get("senha")
     senha_plana = senha_informada or (gerar_senha_temporaria() if criando else "")
+    valor_entrada = dados.get("valor_entrada") or ZERO
+    valor_total_negociado = _valor_total_planejado(valor_entrada, parcelas_planejadas)
 
     if criando:
         aluno = Usuario(role=RoleChoices.ALUNO, ativo=True)
@@ -350,14 +391,16 @@ def salvar_onboarding_aluno(form, usuario_logado: Usuario, landing_url: str, alu
     contrato, _ = Contrato.objects.get_or_create(
         aluno=aluno,
         defaults={
-            "valor_total_negociado": dados["valor_total_negociado"],
-            "data_assinatura": dados["data_assinatura"],
+            "valor_total_negociado": valor_total_negociado,
+            "data_assinatura": dados["data_contrato"],
+            "metodo_pagamento": dados["metodo_pagamento"],
             "status": ContratoStatus.ATIVO,
             "criado_por": usuario_logado,
         },
     )
-    contrato.valor_total_negociado = dados["valor_total_negociado"]
-    contrato.data_assinatura = dados["data_assinatura"]
+    contrato.valor_total_negociado = valor_total_negociado
+    contrato.data_assinatura = dados["data_contrato"]
+    contrato.metodo_pagamento = dados["metodo_pagamento"]
     contrato.observacoes_gerais = dados.get("observacoes", "")
     contrato.status = ContratoStatus.ATIVO
     contrato.criado_por = contrato.criado_por or usuario_logado
@@ -367,10 +410,17 @@ def salvar_onboarding_aluno(form, usuario_logado: Usuario, landing_url: str, alu
         contrato.comprovante_entrada = dados["comprovante_entrada"]
     contrato.save()
 
-    _sincronizar_parcelamento_contrato(contrato, dados)
+    _sincronizar_parcelamento_contrato(
+        contrato=contrato,
+        valor_entrada=valor_entrada,
+        parcelas_planejadas=parcelas_planejadas,
+        data_contrato=dados["data_contrato"],
+        entrada_quitada=bool(contrato.comprovante_entrada),
+    )
 
     if criando:
-        registrar_envios_onboarding(aluno, senha_plana, landing_url)
+        link_pagamento = (parcelas_planejadas[0].get("link_pagamento_ou_pix") or "").strip() if parcelas_planejadas else ""
+        registrar_envios_onboarding(aluno, senha_plana, landing_url, link_pagamento_ou_pix=link_pagamento)
         criar_notificacao_onboarding(aluno)
 
     return CadastroResultado(aluno=aluno, senha_plana=senha_plana, criado=criando)
@@ -411,6 +461,7 @@ def aprovar_proposta_financeira(proposta: PropostaFinanceira, aprovador: Usuario
     contrato = proposta.contrato
     contrato.parcelas.filter(ativa=True, data_pagamento__isnull=True).update(
         ativa=False,
+        ja_renegociada=True,
         observacoes="[RENEGOCIACAO] Parcela substituida por proposta aprovada.",
     )
 

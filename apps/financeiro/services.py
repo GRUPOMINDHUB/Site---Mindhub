@@ -39,6 +39,11 @@ STATUS_UI = {
         "badge_class": "bg-[#e30613]/20 text-red-100 ring-1 ring-[#e30613]/40",
         "dot_class": "bg-[#e30613]",
     },
+    "CANCELADA_RENEGOCIACAO": {
+        "label": "Cancelada (renegociacao)",
+        "badge_class": "bg-white/5 text-zinc-400 ring-1 ring-white/10",
+        "dot_class": "bg-zinc-500",
+    },
     "CANCELADO": {
         "label": "Cancelado",
         "badge_class": "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/30",
@@ -302,10 +307,19 @@ def ficha_aluno_financeira(aluno: Usuario, referencia: date | None = None) -> di
     sincronizar_nota_saude_financeira(aluno, referencia)
 
     parcelas = []
-    for parcela in contrato.parcelas.filter(ativa=True):
+    for parcela in contrato.parcelas.all().order_by("data_vencimento", "numero"):
         status = parcela.get_status(referencia)
-        link_pagamento = parcela.link_pagamento_ou_pix or "Não informado"
-        pode_cobrar = status not in {ParcelaStatus.PAGO, ParcelaStatus.CANCELADO}
+        link_pagamento = parcela.link_pagamento_ou_pix or "Nao informado"
+        pode_cobrar = status not in {ParcelaStatus.PAGO, ParcelaStatus.CANCELADO, ParcelaStatus.CANCELADA_RENEGOCIACAO}
+        tem_historico_renegociacao = bool(parcela.parcela_origem_id or parcela.ja_renegociada)
+        exibir_tag_renegociado = (
+            tem_historico_renegociacao and status in {ParcelaStatus.PENDENTE, ParcelaStatus.ATRASADO, ParcelaStatus.INADIMPLENTE}
+        )
+        pode_renegociar = parcela.ativa and not parcela.data_pagamento and not parcela.ja_renegociada and status in {
+            ParcelaStatus.PENDENTE,
+            ParcelaStatus.ATRASADO,
+            ParcelaStatus.INADIMPLENTE,
+        }
 
         parcelas.append(
             {
@@ -321,6 +335,12 @@ def ficha_aluno_financeira(aluno: Usuario, referencia: date | None = None) -> di
                 "status_label": status_ui(status)["label"],
                 "status_badge_class": status_ui(status)["badge_class"],
                 "dias_atraso": parcela.dias_atraso(referencia),
+                "ativa": parcela.ativa,
+                "ja_renegociada": parcela.ja_renegociada,
+                "parcela_origem_id": parcela.parcela_origem_id,
+                "is_cancelada_renegociacao": status == ParcelaStatus.CANCELADA_RENEGOCIACAO,
+                "exibir_tag_renegociado": exibir_tag_renegociado,
+                "pode_renegociar": pode_renegociar,
                 "link_pagamento_ou_pix": parcela.link_pagamento_ou_pix or "",
                 "comprovante_url": parcela.comprovante.url if parcela.comprovante else "",
                 "observacoes": parcela.observacoes or "",
@@ -388,6 +408,7 @@ def contexto_dashboard_financeiro(usuario: Usuario, periodo: str, referencia: da
     total_cancelados = 0
     valor_em_atraso = ZERO
     valor_inadimplente = ZERO
+    volume_renegociado = ZERO
     faturamento_presumido = ZERO
     previsibilidade_proximo_periodo = ZERO
     farol = []
@@ -417,6 +438,14 @@ def contexto_dashboard_financeiro(usuario: Usuario, periodo: str, referencia: da
                 tem_inadimplencia = True
                 valor_inadimplente += parcela.valor
 
+            if (
+                parcela.ativa
+                and not parcela.data_pagamento
+                and status not in {ParcelaStatus.CANCELADO, ParcelaStatus.CANCELADA_RENEGOCIACAO}
+                and (parcela.parcela_origem_id or parcela.ja_renegociada)
+            ):
+                volume_renegociado += parcela.valor
+
             if periodo_ref.data_inicio <= parcela.data_vencimento <= periodo_ref.data_fim:
                 faturamento_presumido += parcela.valor
 
@@ -443,6 +472,7 @@ def contexto_dashboard_financeiro(usuario: Usuario, periodo: str, referencia: da
         "pct_cancelados": round((total_cancelados / denominador) * 100, 1),
         "valor_em_atraso": valor_em_atraso,
         "valor_inadimplente": valor_inadimplente,
+        "volume_renegociado": volume_renegociado,
         "faturamento_presumido": faturamento_presumido,
         "previsibilidade_proximo_periodo": previsibilidade_proximo_periodo,
         "periodo_selecionado": periodo_ref.chave,

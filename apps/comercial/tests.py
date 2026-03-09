@@ -55,13 +55,19 @@ class ComercialFlowTests(TestCase):
             "cpf_representante": "123.456.789-00",
             "dificuldades": ["ESTOQUE", "CMV"],
             "observacoes": "Duas operacoes e uma cozinha central.",
-            "valor_total_negociado": "2000.00",
-            "data_assinatura": hoje.isoformat(),
-            "quantidade_entrada": "1",
             "valor_entrada": "500.00",
-            "quantidade_recorrente": "3",
-            "valor_recorrente": "500.00",
-            "primeiro_vencimento": hoje.isoformat(),
+            "data_contrato": hoje.isoformat(),
+            "modalidade_pagamento": "PARCELADO",
+            "valor_total_avista": "",
+            "quantidade_parcelas": "3",
+            "metodo_pagamento": "PIX",
+            "link_pagamento_ou_pix": "https://pagamentos.mindhub.com/cobranca/abc123",
+            "parcela_valor[]": ["500.00", "500.00", "500.00"],
+            "parcela_vencimento[]": [
+                (hoje + timedelta(days=30)).isoformat(),
+                (hoje + timedelta(days=60)).isoformat(),
+                (hoje + timedelta(days=90)).isoformat(),
+            ],
         }
         payload.update(overrides)
         return payload
@@ -110,6 +116,40 @@ class ComercialFlowTests(TestCase):
         self.assertEqual(EnvioOnboarding.objects.filter(aluno=aluno).count(), 2)
         self.assertTrue(NotificacaoInterna.objects.filter(destinatario=self.monitor, aluno=aluno).exists())
         self.assertTrue(contrato.parcelas.exclude(asaas_payment_id="").exists())
+        self.assertTrue(contrato.parcelas.filter(ativa=True, link_pagamento_ou_pix__contains="pagamentos.mindhub.com").exists())
+        self.assertTrue(
+            EnvioOnboarding.objects.filter(aluno=aluno, canal="WHATSAPP", mensagem__contains="pagamentos.mindhub.com").exists()
+        )
+
+    def test_cadastro_onboarding_avista_cria_entrada_e_parcela_unica(self):
+        self.login_as(self.admin)
+
+        response = self.client.post(
+            reverse("comercial:cadastro_novo"),
+            data=self.payload_cadastro(
+                email="avista@mindhub.com",
+                valor_entrada="100.00",
+                modalidade_pagamento="AVISTA",
+                valor_total_avista="900.00",
+                quantidade_parcelas="",
+                **{
+                    "parcela_valor[]": [],
+                    "parcela_vencimento[]": [],
+                },
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        aluno = Usuario.objects.get(email="avista@mindhub.com")
+        contrato = Contrato.objects.get(aluno=aluno)
+        parcelas_ativas = list(contrato.parcelas.filter(ativa=True).order_by("numero"))
+
+        self.assertEqual(contrato.valor_total_negociado, Decimal("1000.00"))
+        self.assertEqual(len(parcelas_ativas), 2)
+        self.assertEqual(parcelas_ativas[0].numero, 0)
+        self.assertEqual(parcelas_ativas[0].tipo_parcela, TipoParcela.ENTRADA)
+        self.assertEqual(parcelas_ativas[1].tipo_parcela, TipoParcela.RECORRENTE)
 
     def test_monitor_visualiza_ficha_mas_nao_edita(self):
         aluno, contrato = self.criar_aluno_com_contrato()
@@ -216,9 +256,17 @@ class ComercialFlowTests(TestCase):
             data=self.payload_cadastro(
                 nome=aluno.nome,
                 email=aluno.email,
-                quantidade_entrada="0",
-                quantidade_recorrente="4",
-                valor_recorrente="300.00",
+                valor_entrada="0.00",
+                quantidade_parcelas="4",
+                **{
+                    "parcela_valor[]": ["300.00", "300.00", "300.00", "300.00"],
+                    "parcela_vencimento[]": [
+                        (timezone.localdate() + timedelta(days=15)).isoformat(),
+                        (timezone.localdate() + timedelta(days=45)).isoformat(),
+                        (timezone.localdate() + timedelta(days=75)).isoformat(),
+                        (timezone.localdate() + timedelta(days=105)).isoformat(),
+                    ],
+                },
             ),
         )
 

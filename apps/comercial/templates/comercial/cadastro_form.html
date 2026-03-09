@@ -103,29 +103,112 @@
             <section class="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6">
                 <div class="mb-5 border-b border-white/10 pb-4">
                     <h2 class="text-lg font-bold text-white">Financeiro de entrada</h2>
+                    <p class="mt-2 text-sm text-zinc-500">Configure a entrada, a data do contrato e a modalidade de pagamento com total flexibilidade.</p>
                 </div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    {% for field in form %}
-                        {% if field.name == 'valor_total_negociado' or field.name == 'data_assinatura' or field.name == 'quantidade_entrada' or field.name == 'valor_entrada' or field.name == 'quantidade_recorrente' or field.name == 'valor_recorrente' or field.name == 'primeiro_vencimento' or field.name == 'contrato_assinado' or field.name == 'comprovante_entrada' %}
-                        <div class="{% if field.name == 'contrato_assinado' or field.name == 'comprovante_entrada' %}md:col-span-2{% endif %}">
-                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                            <p class="mt-2 text-sm text-red-300">{{ field.errors|striptags }}</p>
+                <div class="space-y-6" data-financeiro-readonly="{% if readonly %}true{% else %}false{% endif %}">
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.valor_entrada.label }}</label>
+                            {{ form.valor_entrada }}
+                            {% if form.valor_entrada.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.valor_entrada.errors|striptags }}</p>
                             {% endif %}
-                            {% if contrato and field.name == 'contrato_assinado' and contrato.contrato_assinado %}
-                            <a href="{{ contrato.contrato_assinado.url }}" target="_blank" class="mt-2 inline-block text-sm text-red-200 underline underline-offset-4">
-                                Abrir contrato atual
-                            </a>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.data_contrato.label }}</label>
+                            {{ form.data_contrato }}
+                            {% if form.data_contrato.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.data_contrato.errors|striptags }}</p>
                             {% endif %}
-                            {% if contrato and field.name == 'comprovante_entrada' and contrato.comprovante_entrada %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-3 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Modalidade</label>
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <label class="block">
+                                <input type="radio" name="modalidade_pagamento" value="AVISTA" class="finance-mode-input sr-only" {% if modalidade_financeira == 'AVISTA' %}checked{% endif %} {% if readonly %}disabled{% endif %}>
+                                <span class="finance-mode-card flex min-h-[110px] flex-col justify-between rounded-3xl border border-white/10 bg-black/30 p-5 text-left transition">
+                                    <span class="text-sm font-semibold uppercase tracking-[0.18em] text-red-200/80">A vista</span>
+                                    <span class="mt-3 block text-sm leading-6 text-zinc-300">Uma unica parcela principal, com entrada opcional registrada a parte.</span>
+                                </span>
+                            </label>
+                            <label class="block">
+                                <input type="radio" name="modalidade_pagamento" value="PARCELADO" class="finance-mode-input sr-only" {% if modalidade_financeira != 'AVISTA' %}checked{% endif %} {% if readonly %}disabled{% endif %}>
+                                <span class="finance-mode-card flex min-h-[110px] flex-col justify-between rounded-3xl border border-white/10 bg-black/30 p-5 text-left transition">
+                                    <span class="text-sm font-semibold uppercase tracking-[0.18em] text-red-200/80">Parcelado</span>
+                                    <span class="mt-3 block text-sm leading-6 text-zinc-300">Defina a quantidade de parcelas e preencha valor e vencimento de cada linha.</span>
+                                </span>
+                            </label>
+                        </div>
+                        {% if form.modalidade_pagamento.errors %}
+                        <p class="mt-2 text-sm text-red-300">{{ form.modalidade_pagamento.errors|striptags }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div id="bloco-avista" class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.valor_total_avista.label }}</label>
+                            {{ form.valor_total_avista }}
+                            {% if form.valor_total_avista.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.valor_total_avista.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div id="bloco-parcelado" class="space-y-4">
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.quantidade_parcelas.label }}</label>
+                                {{ form.quantidade_parcelas }}
+                                {% if form.quantidade_parcelas.errors %}
+                                <p class="mt-2 text-sm text-red-300">{{ form.quantidade_parcelas.errors|striptags }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div id="container-parcelas" class="space-y-3"></div>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.metodo_pagamento.label }}</label>
+                            {{ form.metodo_pagamento }}
+                            {% if form.metodo_pagamento.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.metodo_pagamento.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.link_pagamento_ou_pix.label }}</label>
+                            {{ form.link_pagamento_ou_pix }}
+                            {% if form.link_pagamento_ou_pix.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.link_pagamento_ou_pix.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.comprovante_entrada.label }}</label>
+                            {{ form.comprovante_entrada }}
+                            {% if form.comprovante_entrada.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.comprovante_entrada.errors|striptags }}</p>
+                            {% endif %}
+                            {% if contrato and contrato.comprovante_entrada %}
                             <a href="{{ contrato.comprovante_entrada.url }}" target="_blank" class="mt-2 inline-block text-sm text-red-200 underline underline-offset-4">
                                 Abrir comprovante atual
                             </a>
                             {% endif %}
                         </div>
-                        {% endif %}
-                    {% endfor %}
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ form.contrato_assinado.label }}</label>
+                            {{ form.contrato_assinado }}
+                            {% if form.contrato_assinado.errors %}
+                            <p class="mt-2 text-sm text-red-300">{{ form.contrato_assinado.errors|striptags }}</p>
+                            {% endif %}
+                            {% if contrato and contrato.contrato_assinado %}
+                            <a href="{{ contrato.contrato_assinado.url }}" target="_blank" class="mt-2 inline-block text-sm text-red-200 underline underline-offset-4">
+                                Abrir contrato atual
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -227,6 +310,7 @@
         </div>
     </div>
 </div>
+{{ parcelas_planejadas|json_script:"parcelas-planejadas-data" }}
 {% endblock %}
 
 {% block extra_css %}
@@ -235,10 +319,15 @@
         width: 100%;
         border-radius: 1rem;
         border: 1px solid rgba(255,255,255,0.08);
-        background: #121212;
+        background: rgba(0, 0, 0, 0.3);
         color: #fff;
         padding: 0.75rem 0.9rem;
         outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: #e30613;
+        box-shadow: 0 0 0 1px rgba(227, 6, 19, 0.45);
     }
 
     textarea {
@@ -273,5 +362,142 @@
         padding: 0.85rem 1rem;
         color: #d4d4d8;
     }
+
+    .finance-mode-input:checked + .finance-mode-card {
+        border-color: rgba(227, 6, 19, 0.55);
+        background: linear-gradient(135deg, rgba(227, 6, 19, 0.2), rgba(18, 18, 18, 0.95));
+        box-shadow: 0 0 0 1px rgba(227, 6, 19, 0.2);
+    }
+
+    .finance-mode-card:hover {
+        border-color: rgba(227, 6, 19, 0.35);
+    }
+
+    .finance-row {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1.5rem;
+        background: rgba(0, 0, 0, 0.28);
+        padding: 1rem;
+    }
+
+    .animate-fade-in {
+        animation: fadeInFinance 0.24s ease-out;
+    }
+
+    @keyframes fadeInFinance {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalidadeInputs = Array.from(document.querySelectorAll('input[name="modalidade_pagamento"]'));
+        const blocoAvista = document.getElementById('bloco-avista');
+        const blocoParcelado = document.getElementById('bloco-parcelado');
+        const quantidadeParcelasInput = document.getElementById('id_quantidade_parcelas');
+        const valorAvistaInput = document.getElementById('id_valor_total_avista');
+        const containerParcelas = document.getElementById('container-parcelas');
+        const financeiroWrapper = document.querySelector('[data-financeiro-readonly]');
+        const readonly = financeiroWrapper && financeiroWrapper.dataset.financeiroReadonly === 'true';
+        const parcelasScript = document.getElementById('parcelas-planejadas-data');
+        const parcelasIniciais = parcelasScript ? JSON.parse(parcelasScript.textContent) : [];
+
+        if (!modalidadeInputs.length || !blocoAvista || !blocoParcelado || !containerParcelas || !quantidadeParcelasInput || !valorAvistaInput) {
+            return;
+        }
+
+        function modalidadeAtual() {
+            const selecionado = modalidadeInputs.find((input) => input.checked);
+            return selecionado ? selecionado.value : 'PARCELADO';
+        }
+
+        function capturarLinhasAtuais() {
+            return Array.from(containerParcelas.querySelectorAll('[data-parcela-row]')).map((linha) => ({
+                valor: linha.querySelector('input[name="parcela_valor[]"]')?.value || '',
+                data_vencimento: linha.querySelector('input[name="parcela_vencimento[]"]')?.value || '',
+            }));
+        }
+
+        function montarLinhaParcela(indice, valoresExistentes) {
+            const linha = document.createElement('div');
+            linha.className = 'finance-row animate-fade-in grid gap-4 md:grid-cols-[0.9fr_1fr_1fr]';
+            linha.dataset.parcelaRow = String(indice);
+
+            const valor = valoresExistentes?.valor || '';
+            const vencimento = valoresExistentes?.data_vencimento || '';
+            const disabled = readonly ? 'disabled' : '';
+
+            linha.innerHTML = `
+                <div class="flex items-center">
+                    <div>
+                        <p class="text-sm font-semibold text-white">Parcela ${indice}</p>
+                        <p class="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">Linha dinamica</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Valor</label>
+                    <input type="number" name="parcela_valor[]" value="${valor}" placeholder="Valor" min="0" step="0.01" ${disabled}>
+                </div>
+                <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Vencimento</label>
+                    <input type="date" name="parcela_vencimento[]" value="${vencimento}" ${disabled}>
+                </div>
+            `;
+            return linha;
+        }
+
+        function gerarLinhasParcelas(useInitialValues = false) {
+            if (modalidadeAtual() !== 'PARCELADO') {
+                containerParcelas.innerHTML = '';
+                return;
+            }
+
+            const quantidade = parseInt(quantidadeParcelasInput.value || '0', 10);
+            const linhasAtuais = useInitialValues ? parcelasIniciais : capturarLinhasAtuais();
+            containerParcelas.innerHTML = '';
+
+            if (!quantidade || quantidade < 1) {
+                return;
+            }
+
+            for (let indice = 1; indice <= quantidade; indice += 1) {
+                containerParcelas.appendChild(montarLinhaParcela(indice, linhasAtuais[indice - 1]));
+            }
+        }
+
+        function atualizarModalidade(useInitialValues = false) {
+            const avista = modalidadeAtual() === 'AVISTA';
+            blocoAvista.classList.toggle('hidden', !avista);
+            blocoParcelado.classList.toggle('hidden', avista);
+            valorAvistaInput.disabled = !avista || readonly;
+            quantidadeParcelasInput.disabled = avista || readonly;
+
+            if (avista) {
+                containerParcelas.innerHTML = '';
+            } else {
+                if ((!quantidadeParcelasInput.value || quantidadeParcelasInput.value === '0') && parcelasIniciais.length) {
+                    quantidadeParcelasInput.value = parcelasIniciais.length;
+                }
+                gerarLinhasParcelas(useInitialValues);
+            }
+        }
+
+        modalidadeInputs.forEach((input) => {
+            input.addEventListener('change', () => atualizarModalidade(false));
+        });
+
+        quantidadeParcelasInput.addEventListener('input', () => gerarLinhasParcelas(false));
+        atualizarModalidade(true);
+    });
+</script>
 {% endblock %}
