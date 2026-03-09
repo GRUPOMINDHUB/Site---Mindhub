@@ -78,12 +78,6 @@
                     class="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500/20">
                     Baixar Relat&oacute;rio
                 </button>
-                {% if usuario.is_admin %}
-                <a href="{% url 'admin:financeiro_contrato_changelist' %}" target="_blank"
-                    class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/10">
-                    Admin
-                </a>
-                {% endif %}
             </div>
         </div>
     </section>
