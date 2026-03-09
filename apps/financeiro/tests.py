@@ -113,6 +113,47 @@ class FinanceiroTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Central Financeira")
 
+    def test_contexto_dashboard_periodo_semanal(self):
+        hoje = timezone.localdate()
+        Parcela.objects.create(
+            contrato=self.contrato,
+            numero=1,
+            valor="300.00",
+            data_vencimento=hoje + timedelta(days=1),
+        )
+
+        contexto = contexto_dashboard_financeiro(self.monitor, "semanal", referencia=hoje)
+        self.assertEqual(contexto["metrics"]["periodo_selecionado"], "semanal")
+        self.assertEqual(contexto["metrics"]["periodo_label"], "Semanal")
+        self.assertEqual(contexto["metrics"]["faturamento_presumido"], Decimal("300.00"))
+
+    def test_contexto_dashboard_periodo_personalizado(self):
+        hoje = timezone.localdate()
+        Parcela.objects.create(
+            contrato=self.contrato,
+            numero=1,
+            valor="300.00",
+            data_vencimento=hoje - timedelta(days=1),
+        )
+        Parcela.objects.create(
+            contrato=self.contrato,
+            numero=2,
+            valor="200.00",
+            data_vencimento=hoje + timedelta(days=12),
+        )
+
+        contexto = contexto_dashboard_financeiro(
+            self.monitor,
+            "personalizado",
+            referencia=hoje,
+            data_inicio_custom=(hoje - timedelta(days=2)).isoformat(),
+            data_fim_custom=(hoje + timedelta(days=2)).isoformat(),
+        )
+
+        self.assertEqual(contexto["metrics"]["periodo_selecionado"], "personalizado")
+        self.assertEqual(contexto["metrics"]["periodo_label"], "Personalizado")
+        self.assertEqual(contexto["metrics"]["faturamento_presumido"], Decimal("300.00"))
+
     def test_status_cancelada_renegociacao(self):
         parcela = Parcela.objects.create(
             contrato=self.contrato,

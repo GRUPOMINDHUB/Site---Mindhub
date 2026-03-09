@@ -51,3 +51,14 @@ class ParcelaAtualizacaoForm(forms.ModelForm):
             "data_pagamento": forms.DateInput(attrs={"type": "date"}),
             "observacoes": forms.Textarea(attrs={"rows": 2}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        data_pagamento = cleaned_data.get("data_pagamento")
+        comprovante_novo = cleaned_data.get("comprovante")
+        comprovante_existente = bool(getattr(self.instance, "comprovante", None))
+
+        if data_pagamento and not comprovante_novo and not comprovante_existente:
+            self.add_error("comprovante", "Comprovante obrigatorio para marcar a parcela como paga.")
+
+        return cleaned_data

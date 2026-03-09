@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from urllib.parse import quote
 
 from django.db.models import Prefetch
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 
 from apps.usuarios.models import RoleChoices, Usuario
@@ -107,36 +108,58 @@ def limites_mes(ano: int, mes: int) -> tuple[date, date]:
     return date(ano, mes, 1), date(ano, mes, ultimo_dia)
 
 
-def calcular_periodo_financeiro(periodo: str, referencia: date | None = None) -> PeriodoFinanceiro:
-    referencia = referencia or hoje_local()
-    periodo = periodo if periodo in {"mensal", "trimestral", "semestral", "anual"} else "mensal"
+def _normalizar_data_personalizada(valor) -> date | None:
+    if isinstance(valor, date):
+        return valor
+    if isinstance(valor, str) and valor.strip():
+        return parse_date(valor.strip())
+    return None
 
-    if periodo == "trimestral":
-        mes_inicio = ((referencia.month - 1) // 3) * 3 + 1
-        meses = 3
-        label = "Trimestral"
-    elif periodo == "semestral":
-        mes_inicio = 1 if referencia.month <= 6 else 7
-        meses = 6
-        label = "Semestral"
-    elif periodo == "anual":
-        mes_inicio = 1
-        meses = 12
-        label = "Anual"
+
+def calcular_periodo_financeiro(
+    periodo: str,
+    referencia: date | None = None,
+    data_inicio_custom=None,
+    data_fim_custom=None,
+) -> PeriodoFinanceiro:
+    referencia = referencia or hoje_local()
+    periodo = periodo if periodo in {"semanal", "mensal", "personalizado"} else "mensal"
+
+    if periodo == "semanal":
+        data_inicio = referencia - timedelta(days=referencia.weekday())
+        data_fim = data_inicio + timedelta(days=6)
+        proximo_inicio = data_fim + timedelta(days=1)
+        proximo_fim = proximo_inicio + timedelta(days=6)
+        label = "Semanal"
+    elif periodo == "personalizado":
+        data_inicio = _normalizar_data_personalizada(data_inicio_custom)
+        data_fim = _normalizar_data_personalizada(data_fim_custom)
+
+        if not data_inicio and not data_fim:
+            data_fim = referencia
+            data_inicio = referencia - timedelta(days=6)
+        elif not data_inicio:
+            data_inicio = data_fim
+        elif not data_fim:
+            data_fim = data_inicio
+
+        if data_inicio > data_fim:
+            data_inicio, data_fim = data_fim, data_inicio
+
+        duracao = max((data_fim - data_inicio).days + 1, 1)
+        proximo_inicio = data_fim + timedelta(days=1)
+        proximo_fim = proximo_inicio + timedelta(days=duracao - 1)
+        label = "Personalizado"
     else:
         mes_inicio = referencia.month
-        meses = 1
+        ano_inicio = referencia.year
+        data_inicio = date(ano_inicio, mes_inicio, 1)
+        _, data_fim = limites_mes(ano_inicio, mes_inicio)
+
+        prox_ano, prox_mes = adicionar_meses(ano_inicio, mes_inicio, 1)
+        proximo_inicio = date(prox_ano, prox_mes, 1)
+        _, proximo_fim = limites_mes(prox_ano, prox_mes)
         label = "Mensal"
-
-    ano_inicio = referencia.year
-    data_inicio = date(ano_inicio, mes_inicio, 1)
-    ano_fim, mes_fim = adicionar_meses(ano_inicio, mes_inicio, meses - 1)
-    _, data_fim = limites_mes(ano_fim, mes_fim)
-
-    prox_ano, prox_mes = adicionar_meses(ano_inicio, mes_inicio, meses)
-    proximo_inicio = date(prox_ano, prox_mes, 1)
-    prox_fim_ano, prox_fim_mes = adicionar_meses(prox_ano, prox_mes, meses - 1)
-    _, proximo_fim = limites_mes(prox_fim_ano, prox_fim_mes)
 
     return PeriodoFinanceiro(
         chave=periodo,
@@ -150,10 +173,9 @@ def calcular_periodo_financeiro(periodo: str, referencia: date | None = None) ->
 
 def periodo_opcoes() -> list[dict[str, str]]:
     return [
+        {"value": "semanal", "label": "Semanal"},
         {"value": "mensal", "label": "Mensal"},
-        {"value": "trimestral", "label": "Trimestral"},
-        {"value": "semestral", "label": "Semestral"},
-        {"value": "anual", "label": "Anual"},
+        {"value": "personalizado", "label": "Personalizado"},
     ]
 
 
@@ -394,9 +416,20 @@ def ficha_aluno_financeira(aluno: Usuario, referencia: date | None = None) -> di
     }
 
 
-def contexto_dashboard_financeiro(usuario: Usuario, periodo: str, referencia: date | None = None) -> dict[str, object]:
+def contexto_dashboard_financeiro(
+    usuario: Usuario,
+    periodo: str,
+    referencia: date | None = None,
+    data_inicio_custom=None,
+    data_fim_custom=None,
+) -> dict[str, object]:
     referencia = referencia or hoje_local()
-    periodo_ref = calcular_periodo_financeiro(periodo, referencia)
+    periodo_ref = calcular_periodo_financeiro(
+        periodo,
+        referencia,
+        data_inicio_custom=data_inicio_custom,
+        data_fim_custom=data_fim_custom,
+    )
     alunos = alunos_financeiros(usuario)
     overview = [resumo_aluno_financeiro(aluno, referencia) for aluno in alunos]
     overview_por_id = {item["id"]: item for item in overview}
@@ -479,6 +512,8 @@ def contexto_dashboard_financeiro(usuario: Usuario, periodo: str, referencia: da
         "periodo_label": periodo_ref.label,
         "data_inicio_filtro": data_brasileira(periodo_ref.data_inicio),
         "data_fim_filtro": data_brasileira(periodo_ref.data_fim),
+        "data_inicio_iso": periodo_ref.data_inicio.isoformat(),
+        "data_fim_iso": periodo_ref.data_fim.isoformat(),
         "proximo_inicio_filtro": data_brasileira(periodo_ref.proximo_inicio),
         "proximo_fim_filtro": data_brasileira(periodo_ref.proximo_fim),
     }

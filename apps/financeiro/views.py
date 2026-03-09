@@ -34,7 +34,14 @@ def dashboard_financeiro(request):
         return redirect("usuarios:index")
 
     periodo = request.GET.get("periodo", "mensal")
-    contexto = contexto_dashboard_financeiro(usuario, periodo)
+    data_inicio = request.GET.get("data_inicio")
+    data_fim = request.GET.get("data_fim")
+    contexto = contexto_dashboard_financeiro(
+        usuario,
+        periodo,
+        data_inicio_custom=data_inicio,
+        data_fim_custom=data_fim,
+    )
     contexto.update(
         {
             "usuario": usuario,
